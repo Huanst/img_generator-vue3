@@ -24,8 +24,8 @@
 1. 克隆项目
 
 ```bash
-git clone <repository-url>
-cd image-generator
+git clone https://github.com/Huanst/img_generator-vue3.git
+cd img_generator-vue3
 ```
 
 2. 安装依赖
