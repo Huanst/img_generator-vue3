@@ -35,6 +35,8 @@ npm install
 
 3. 配置环境变量
    创建`.env.local`文件并添加您的 API 密钥：
+   项目使用的是硅基流动siliconflow的API，模型是免费的Kwai-Kolors/Kolors生图模型
+   API KEY申请地址：https://cloud.siliconflow.cn/i/ub4Y8OWs
 
 ```
 VITE_SILICONFLOW_API_KEY=your_api_key_here
