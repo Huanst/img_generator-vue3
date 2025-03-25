@@ -6,7 +6,9 @@
       dark: variant === 'dark',
       'with-glow': showGlow,
       'with-border': withBorder,
-    }">
+      'is-visible': modelValue,
+    }"
+    @click="handleClick">
     <slot></slot>
     <div v-if="showGlow" class="glow-effect"></div>
   </div>
@@ -29,7 +31,17 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  modelValue: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['update:modelValue'])
+
+const handleClick = () => {
+  emit('update:modelValue', !props.modelValue)
+}
 
 const isMobile = ref(window.innerWidth <= 768)
 

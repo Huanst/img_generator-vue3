@@ -1,3 +1,4 @@
+/* eslint-disable */
 <template>
   <div v-if="images && images.length" class="results-container">
     <glassmorphic-card variant="primary">
@@ -6,8 +7,8 @@
         <el-button
           size="small"
           class="download-all-btn"
-          @click="downloadAllImages"
-          :disabled="downloadingAll">
+          :disabled="downloadingAll"
+          @click="downloadAllImages">
           <el-icon v-if="!downloadingAll"><Download /></el-icon>
           <el-icon v-else class="is-loading"><Loading /></el-icon>
           <span>{{ downloadingAll ? '打开中...' : '打开全部' }}</span>
@@ -206,26 +207,19 @@ const getImageSize = url => {
   })
 
   // 使用Promise.race来处理超时情况
-  Promise.race([loadPromise, timeoutPromise])
+  return Promise.race([loadPromise, timeoutPromise])
     .then(size => {
       if (isMounted.value) {
-        // 更新图片尺寸显示
-        const displayElement = document.querySelector('.stat-value')
-        if (displayElement && size !== '未知') {
-          displayElement.textContent = size
-        }
+        return size
       }
+      return '未知'
     })
     .catch(() => {
       if (isMounted.value) {
-        const displayElement = document.querySelector('.stat-value')
-        if (displayElement) {
-          displayElement.textContent = '未知'
-        }
+        return '未知'
       }
+      return '未知'
     })
-
-  return '获取中...'
 }
 
 const downloadImage = async (url, index) => {
@@ -245,17 +239,7 @@ const downloadImage = async (url, index) => {
     downloadingIndex.value = index
     console.log(`开始下载图片 ${index + 1}: ${url.substring(0, 50)}...`)
 
-    // 使用no-cors模式尝试获取图片
-    const response = await fetch(url, {
-      mode: 'no-cors',
-      credentials: 'omit',
-      cache: 'no-cache',
-    })
-    // 如果组件已卸载，不继续处理
-    if (!isMounted.value) return
-
     // 创建一个链接并打开图片，让用户手动保存
-    // 这是解决CORS限制的一种方法
     const link = document.createElement('a')
     link.href = url
     link.target = '_blank'
@@ -278,15 +262,6 @@ const downloadImage = async (url, index) => {
     if (!isMounted.value) return
 
     console.error('下载图片失败:', error)
-
-    // 即使fetch失败，仍然尝试在新标签页打开
-    const link = document.createElement('a')
-    link.href = url
-    link.target = '_blank'
-    link.rel = 'noopener noreferrer'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
 
     ElNotification({
       title: '图片已尝试打开',
@@ -614,7 +589,9 @@ const handleImageClick = () => {
   border-radius: 12px;
   overflow: hidden;
   background: var(--card-bg, rgba(0, 0, 0, 0.2));
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
   border: 1px solid rgba(var(--text-color, 255, 255, 255), 0.05);
   display: flex;
   flex-direction: column;

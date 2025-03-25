@@ -36,7 +36,7 @@
       </div>
     </div>
 
-    <el-form :model="formData" label-position="top">
+    <el-form label-position="top">
       <el-form-item>
         <template #label>
           <div class="form-label">
@@ -49,56 +49,50 @@
           </div>
         </template>
         <el-input
-          v-model="formData.prompt"
+          v-model="prompt"
           type="textarea"
-          :rows="4"
-          resize="none"
-          placeholder="例如：未来科技感的城市街景，霓虹灯光，多云的黄昏" />
-        <div
-          class="character-count"
-          :class="{ warning: formData.prompt.length > 950 }">
-          {{ formData.prompt.length }}/1000
+          :rows="3"
+          placeholder="描述你想要生成的图片..."
+          :disabled="loading"
+          @keydown.enter.prevent="handleGenerate" />
+        <div class="character-count" :class="{ warning: prompt.length > 950 }">
+          {{ prompt.length }}/1000
         </div>
       </el-form-item>
 
       <div class="form-row">
         <el-form-item label="图像尺寸" class="form-item-col">
-          <el-select v-model="formData.size" class="full-width">
-            <el-option label="1024 x 1024" value="1024x1024">
-              <div class="option-with-icon">
-                <el-icon><FullScreen /></el-icon>
-                <span>1024 x 1024</span>
-              </div>
-            </el-option>
-            <el-option label="512 x 512" value="512x512">
-              <div class="option-with-icon">
-                <el-icon><Crop /></el-icon>
-                <span>512 x 512</span>
-              </div>
-            </el-option>
-            <el-option label="768 x 768" value="768x768">
-              <div class="option-with-icon">
-                <el-icon><Picture /></el-icon>
-                <span>768 x 768</span>
-              </div>
-            </el-option>
-          </el-select>
+          <el-input-number
+            v-model="width"
+            :min="256"
+            :max="1024"
+            :step="64"
+            :disabled="loading"
+            class="size-input" />
+          <span class="size-separator">×</span>
+          <el-input-number
+            v-model="height"
+            :min="256"
+            :max="1024"
+            :step="64"
+            :disabled="loading"
+            class="size-input" />
         </el-form-item>
 
         <el-form-item label="生成数量" class="form-item-col">
           <div class="number-control">
             <el-button
               size="small"
-              :disabled="formData.n <= 1"
-              @click="formData.n = Math.max(1, formData.n - 1)"
+              :disabled="imageCount <= 1"
+              @click="imageCount = Math.max(1, imageCount - 1)"
               class="number-btn">
               <el-icon><Minus /></el-icon>
             </el-button>
-            <div class="number-display">{{ formData.n }}</div>
+            <div class="number-display">{{ imageCount }}</div>
             <el-button
               size="small"
-              :disabled="formData.n >= 4"
-              @click="formData.n = Math.min(4, formData.n + 1)"
+              :disabled="imageCount >= 4"
+              @click="imageCount = Math.min(4, imageCount + 1)"
               class="number-btn">
               <el-icon><Plus /></el-icon>
             </el-button>
@@ -112,7 +106,7 @@
 
           <el-form-item label="负向提示词">
             <el-input
-              v-model="formData.negative_prompt"
+              v-model="negativePrompt"
               type="textarea"
               :rows="2"
               resize="none"
@@ -121,24 +115,23 @@
 
           <div class="form-row">
             <el-form-item label="风格强度" class="form-item-col">
-              <el-slider
-                v-model="formData.cfgScale"
+              <el-input-number
+                v-model="guidanceScale"
                 :min="1"
                 :max="20"
                 :step="0.5"
-                show-stops />
-              <div class="slider-labels">
-                <span>写实</span>
-                <span>创意</span>
-              </div>
+                :disabled="loading"
+                class="guidance-scale-input" />
             </el-form-item>
 
             <el-form-item label="采样步数" class="form-item-col">
-              <el-select v-model="formData.steps" class="full-width">
-                <el-option label="20 步 (快速)" value="20" />
-                <el-option label="30 步 (平衡)" value="30" />
-                <el-option label="50 步 (高质量)" value="50" />
-              </el-select>
+              <el-input-number
+                v-model="steps"
+                :min="1"
+                :max="50"
+                :step="1"
+                :disabled="loading"
+                class="steps-input" />
             </el-form-item>
           </div>
         </glassmorphic-card>
@@ -160,9 +153,9 @@
         <el-button
           type="primary"
           :loading="loading"
-          @click="generateImage"
+          @click="handleGenerate"
           class="generate-btn"
-          :disabled="!formData.prompt.trim()">
+          :disabled="!prompt.trim()">
           <div class="btn-content">
             <el-icon v-if="!loading"><MagicStick /></el-icon>
             <span>{{ loading ? '生成中...' : '生成图像' }}</span>
@@ -176,32 +169,27 @@
 <script setup>
 import { ref, onUnmounted } from 'vue'
 import {
-  Picture,
+  MagicStick,
+  Upload,
+  Loading,
   InfoFilled,
-  FullScreen,
-  Crop,
   Minus,
   Plus,
   ArrowDown,
-  MagicStick,
-  Upload,
   Close,
-  Loading,
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import axios from 'axios'
 
 const loading = ref(false)
 const showAdditionalOptions = ref(false)
-
-const formData = ref({
-  prompt: '',
-  negative_prompt: '',
-  size: '1024x1024',
-  n: 1,
-  cfgScale: 7,
-  steps: '30',
-})
+const prompt = ref('')
+const width = ref(1024)
+const height = ref(1024)
+const negativePrompt = ref('')
+const guidanceScale = ref(7)
+const steps = ref(30)
+const imageCount = ref(1)
 
 const uploadedImage = ref(null)
 const fileInput = ref(null)
@@ -220,7 +208,7 @@ onUnmounted(() => {
 const emit = defineEmits(['imagesGenerated', 'error'])
 
 const generateImage = async () => {
-  if (!formData.value.prompt.trim()) {
+  if (!prompt.value.trim()) {
     return
   }
 
@@ -240,15 +228,15 @@ const generateImage = async () => {
 
   try {
     // 验证提示词长度
-    if (formData.value.prompt.length > 1000) {
+    if (prompt.value.length > 1000) {
       throw new Error('提示词过长，请保持在1000字符以内')
     }
 
     // 构建请求参数
     const requestParams = {
-      prompt: formData.value.prompt.trim(),
-      n: Math.max(1, Math.min(4, parseInt(formData.value.n))),
-      size: formData.value.size,
+      prompt: prompt.value.trim(),
+      n: Math.max(1, Math.min(4, parseInt(imageCount.value))),
+      size: `${width.value}x${height.value}`,
       model: 'Kwai-Kolors/Kolors',
     }
 
@@ -282,17 +270,14 @@ const generateImage = async () => {
 
     // 添加可选参数
     if (showAdditionalOptions.value) {
-      if (formData.value.negative_prompt.trim()) {
-        requestParams.negative_prompt = formData.value.negative_prompt.trim()
+      if (negativePrompt.value.trim()) {
+        requestParams.negative_prompt = negativePrompt.value.trim()
       }
       requestParams.guidance_scale = Math.max(
         1,
-        Math.min(20, parseFloat(formData.value.cfgScale))
+        Math.min(20, parseFloat(guidanceScale.value))
       )
-      requestParams.steps = Math.max(
-        20,
-        Math.min(50, parseInt(formData.value.steps))
-      )
+      requestParams.steps = Math.max(20, Math.min(50, parseInt(steps.value)))
     }
 
     // 验证API密钥
@@ -384,6 +369,10 @@ const generateImage = async () => {
       loading.value = false
     }
   }
+}
+
+const handleGenerate = () => {
+  generateImage()
 }
 
 const triggerFileUpload = () => {
