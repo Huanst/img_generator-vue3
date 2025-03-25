@@ -1,0 +1,49 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint check
+        run: |
+          npm install -D eslint eslint-plugin-vue @vue/eslint-config-prettier
+          npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore
+
+      - name: Type check
+        run: |
+          npm install -D typescript @vue/tsconfig
+          npx vue-tsc --noEmit
+
+      - name: Build check
+        run: npm run build
+        env:
+          VITE_SILICONFLOW_API_KEY: ${{ secrets.VITE_SILICONFLOW_API_KEY }}
+
+      - name: Deploy to Server
+        if: success()
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: 'dist/*'
+          target: ${{ secrets.SERVER_DEPLOY_PATH }}
+          strip_components: 1

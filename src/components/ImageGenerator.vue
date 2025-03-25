@@ -18,9 +18,6 @@
               @change="handleFileUpload" />
           </div>
         </el-tooltip>
-        <div class="tech-icon-container">
-          <el-icon class="tech-icon"><Picture /></el-icon>
-        </div>
       </div>
     </div>
 

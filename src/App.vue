@@ -120,8 +120,8 @@ const scrollToResults = () => {
         <div class="logo-container">
           <div class="logo-icon">AI</div>
         </div>
-        <h1>AI 图像生成器</h1>
-        <p class="app-subtitle">基于人工智能的高质量图像合成工具</p>
+        <!-- <h1>AI 图像生成器</h1>
+        <p class="app-subtitle">基于人工智能的高质量图像合成工具</p> -->
 
         <!-- 主题切换按钮 -->
         <div class="theme-toggle">
