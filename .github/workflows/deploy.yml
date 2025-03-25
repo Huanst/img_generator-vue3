@@ -24,7 +24,7 @@ jobs:
 
       - name: Lint check
         run: |
-          npm install -D eslint eslint-plugin-vue @vue/eslint-config-prettier
+          npm install -D eslint eslint-plugin-vue @vue/eslint-config-prettier prettier @babel/eslint-parser
           npx eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore
 
       - name: Type check
