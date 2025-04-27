@@ -62,41 +62,53 @@
 
       <div class="form-row">
         <el-form-item label="图像尺寸" class="form-item-col">
-          <el-input-number
-            v-model="width"
-            :min="256"
-            :max="1024"
-            :step="64"
-            :disabled="loading"
-            class="size-input" />
-          <span class="size-separator">×</span>
-          <el-input-number
-            v-model="height"
-            :min="256"
-            :max="1024"
-            :step="64"
-            :disabled="loading"
-            class="size-input" />
+          <div class="size-selector">
+            <el-select
+              v-model="selectedSize"
+              placeholder="选择分辨率"
+              class="size-select"
+              :disabled="loading">
+              <el-option
+                v-for="option in sizeOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value" />
+            </el-select>
+
+            <div v-if="selectedSize === 'custom'" class="custom-size-inputs">
+              <el-input-number
+                v-model="width"
+                :min="256"
+                :max="1024"
+                :step="64"
+                :disabled="loading"
+                @change="updateSelectedSize"
+                class="size-input" />
+              <span class="size-separator">×</span>
+              <el-input-number
+                v-model="height"
+                :min="256"
+                :max="1024"
+                :step="64"
+                :disabled="loading"
+                @change="updateSelectedSize"
+                class="size-input" />
+            </div>
+          </div>
         </el-form-item>
 
         <el-form-item label="生成数量" class="form-item-col">
-          <div class="number-control">
-            <el-button
-              size="small"
-              :disabled="imageCount <= 1"
-              @click="imageCount = Math.max(1, imageCount - 1)"
-              class="number-btn">
-              <el-icon><Minus /></el-icon>
-            </el-button>
-            <div class="number-display">{{ imageCount }}</div>
-            <el-button
-              size="small"
-              :disabled="imageCount >= 4"
-              @click="imageCount = Math.min(4, imageCount + 1)"
-              class="number-btn">
-              <el-icon><Plus /></el-icon>
-            </el-button>
-          </div>
+          <el-select 
+            v-model="imageCount" 
+            placeholder="选择生成数量"
+            class="count-select"
+            :disabled="loading">
+            <el-option
+              v-for="num in 4"
+              :key="num"
+              :label="`${num}张图片`"
+              :value="num" />
+          </el-select>
         </el-form-item>
       </div>
 
@@ -115,23 +127,30 @@
 
           <div class="form-row">
             <el-form-item label="风格强度" class="form-item-col">
-              <el-input-number
-                v-model="guidanceScale"
-                :min="1"
-                :max="20"
-                :step="0.5"
-                :disabled="loading"
-                class="guidance-scale-input" />
+              <div class="slider-container">
+                <el-slider
+                  v-model="guidanceScale"
+                  :min="1"
+                  :max="20"
+                  :step="0.5"
+                  :disabled="loading"
+                  :format-tooltip="value => Math.floor(value) === value ? value.toString() : value.toFixed(1)"
+                  class="guidance-scale-slider" />
+                <div class="slider-value">{{ Math.floor(guidanceScale) === guidanceScale ? guidanceScale : guidanceScale.toFixed(1) }}</div>
+              </div>
             </el-form-item>
 
             <el-form-item label="采样步数" class="form-item-col">
-              <el-input-number
-                v-model="steps"
-                :min="1"
-                :max="50"
-                :step="1"
-                :disabled="loading"
-                class="steps-input" />
+              <div class="slider-container">
+                <el-slider
+                  v-model="steps"
+                  :min="1"
+                  :max="100"
+                  :step="1"
+                  :disabled="loading"
+                  class="steps-slider" />
+                <div class="slider-value">{{ steps }}</div>
+              </div>
             </el-form-item>
           </div>
         </glassmorphic-card>
@@ -167,16 +186,15 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref, onUnmounted, watch } from 'vue'
 import {
   MagicStick,
   Upload,
   Loading,
   InfoFilled,
-  Minus,
-  Plus,
   ArrowDown,
   Close,
+  Expand,
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import axios from 'axios'
@@ -190,6 +208,35 @@ const negativePrompt = ref('')
 const guidanceScale = ref(7)
 const steps = ref(30)
 const imageCount = ref(1)
+
+// 预设的分辨率选项
+const sizeOptions = [
+  { value: '1024x1024', label: '1024×1024', width: 1024, height: 1024 },
+  { value: '960x1280', label: '960×1280', width: 960, height: 1280 },
+  { value: '768x1024', label: '768×1024', width: 768, height: 1024 },
+  { value: '720x1440', label: '720×1440', width: 720, height: 1440 },
+  { value: '720x1280', label: '720×1280', width: 720, height: 1280 },
+  { value: 'custom', label: '自定义尺寸' }
+]
+
+const selectedSize = ref('1024x1024')
+
+// 设置预设分辨率
+const setPresetSize = (value) => {
+  const option = sizeOptions.find(opt => opt.value === value)
+  if (option && option.value !== 'custom') {
+    width.value = option.width
+    height.value = option.height
+  }
+}
+
+// 当宽度或高度改变时，检查是否匹配某个预设
+const updateSelectedSize = () => {
+  const matchedOption = sizeOptions.find(
+    opt => opt.width === width.value && opt.height === height.value
+  )
+  selectedSize.value = matchedOption ? matchedOption.value : 'custom'
+}
 
 const uploadedImage = ref(null)
 const fileInput = ref(null)
@@ -477,6 +524,16 @@ const handleFileUpload = event => {
 const removeUploadedImage = () => {
   uploadedImage.value = null
 }
+
+// 监听分辨率选择变化
+watch(selectedSize, (newVal) => {
+  setPresetSize(newVal)
+})
+
+// 监听宽度和高度变化
+watch([width, height], () => {
+  updateSelectedSize()
+})
 </script>
 
 <style scoped>
@@ -604,12 +661,75 @@ const removeUploadedImage = () => {
   color: rgba(255, 255, 255, 0.8);
 }
 
-.slider-labels {
+.slider-container {
+  width: 100%;
+  padding: 0 4px;
   display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  margin-top: 4px;
+  align-items: center;
+  position: relative;
+  margin: 10px 0;
+}
+
+.guidance-scale-slider,
+.steps-slider {
+  width: calc(100% - 40px);
+  margin-right: 10px;
+}
+
+.slider-value {
+  min-width: 30px;
+  text-align: right;
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+:deep(.el-slider) {
+  --el-slider-height: 10px; /* 增加高度 */
+  --el-slider-button-size: 20px;
+}
+
+:deep(.el-slider__runway) {
+  height: var(--el-slider-height);
+  border-radius: calc(var(--el-slider-height) / 2);
+  background-color: var(--slider-track-bg);
+  margin: 16px 0;
+  transition: background-color 0.3s ease;
+}
+
+:deep(.el-slider:hover .el-slider__runway) {
+  background-color: var(--slider-track-bg-hover);
+}
+
+:deep(.el-slider__bar) {
+  height: var(--el-slider-height);
+  border-radius: calc(var(--el-slider-height) / 2);
+  background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+}
+
+:deep(.el-slider__button) {
+  border: none;
+  background: #fff;
+  width: var(--el-slider-button-size);
+  height: var(--el-slider-button-size);
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+:deep(.el-slider__button:hover) {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(var(--primary-color-rgb), 0.4);
+}
+
+:deep(.el-slider__button-wrapper) {
+  top: calc((var(--el-slider-height) - var(--el-slider-button-size)) / 2);
+  width: var(--el-slider-button-size);
+  height: var(--el-slider-button-size);
+}
+
+/* 移除不再需要的标记点样式 */
+:deep(.el-slider__stop) {
+  display: none;
 }
 
 .form-actions {
@@ -718,56 +838,6 @@ const removeUploadedImage = () => {
   color: var(--text-secondary);
 }
 
-:deep(.el-slider__runway) {
-  background-color: var(--border-color, rgba(255, 255, 255, 0.1));
-}
-
-:deep(.el-slider__bar) {
-  background-color: var(--primary-color);
-}
-
-:deep(.el-slider__button) {
-  border: 2px solid var(--primary-color);
-  background-color: #fff;
-}
-
-@media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-  }
-
-  .generator-title {
-    font-size: 1.5rem;
-  }
-
-  .generate-btn {
-    max-width: none;
-  }
-}
-
-@media (min-width: 1024px) {
-  .generator-header {
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .form-row {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 16px;
-    align-items: center;
-  }
-
-  :deep(.el-form-item__label) {
-    text-align: left;
-  }
-
-  :deep(.el-form) {
-    width: 100%;
-  }
-}
-
 .uploaded-image-preview {
   margin-bottom: 20px;
 }
@@ -854,5 +924,87 @@ const removeUploadedImage = () => {
 :deep(.el-popper.is-light .el-popper__arrow::before) {
   background: var(--card-bg);
   border-color: var(--border-color);
+}
+
+.size-selector {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 8px;
+}
+
+.size-select {
+  width: 100%;
+}
+
+.custom-size-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.size-input {
+  width: 100px;
+}
+
+.size-separator {
+  font-weight: 600;
+  margin: 0 4px;
+}
+
+.count-select {
+  width: 100%;
+}
+
+:deep(.el-select-dropdown__item) {
+  text-align: center;
+}
+
+:deep(.el-input__inner) {
+  text-align: center;
+}
+
+:deep(.el-input-number__decrease),
+:deep(.el-input-number__increase) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .generator-title {
+    font-size: 1.5rem;
+  }
+
+  .generate-btn {
+    max-width: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .generator-header {
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    align-items: center;
+  }
+
+  :deep(.el-form-item__label) {
+    text-align: left;
+  }
+
+  :deep(.el-form) {
+    width: 100%;
+  }
 }
 </style>

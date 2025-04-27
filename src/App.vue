@@ -214,6 +214,9 @@ const scrollToResults = () => {
   --card-bg: rgba(255, 255, 255, 0.07);
   --text-color: #ffffff;
   --text-secondary: rgba(255, 255, 255, 0.7);
+  /* 滑块轨道颜色 - 深色模式 */
+  --slider-track-bg: #44475a;
+  --slider-track-bg-hover: #555970;
 }
 
 /* 亮色模式变量 - 手动设置时使用 */
@@ -226,6 +229,9 @@ const scrollToResults = () => {
   --text-color: #1a1a2e;
   --text-secondary: rgba(0, 0, 0, 0.65);
   --border-color: rgba(0, 0, 0, 0.1);
+  /* 滑块轨道颜色 - 浅色模式 */
+  --slider-track-bg: #e0e0e0;
+  --slider-track-bg-hover: #d0d0d0;
 }
 
 * {
