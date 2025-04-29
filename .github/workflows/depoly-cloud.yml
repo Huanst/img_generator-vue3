@@ -35,14 +35,15 @@ jobs:
       - name: Build
         run: pnpm build # 执行项目的构建脚本
 
-      # 步骤 6: 准备部署目录
-      - name: Prepare deployment
+      # 步骤 6: 压缩构建文件
+      - name: Compress build files
         run: |
-          sudo chown -R $USER:$USER dist
-          chmod -R 755 dist
+          cd dist
+          tar -czf ../dist.tar.gz ./*
+          cd ..
 
-      # 步骤 7: 清理目标目录
-      - name: Clean target directory
+      # 步骤 7: 部署到服务器
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -50,17 +51,43 @@ jobs:
           key: ${{ secrets.SERVER_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            rm -rf /www/wwwroot/huanst.cn/*
+            # 创建临时目录
+            TEMP_DIR=$(mktemp -d)
+            
+            # 确保目标目录存在
             mkdir -p /www/wwwroot/huanst.cn
+            
+            # 清理目标目录
+            rm -rf /www/wwwroot/huanst.cn/*
+            
+            echo "Target directory cleaned"
 
-      # 步骤 8: 部署到服务器
-      - name: Deploy to Server
+      # 步骤 8: 传输文件
+      - name: Transfer files
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
-          source: "dist/*"
+          source: "dist.tar.gz"
           target: "/www/wwwroot/huanst.cn"
-          strip_components: 1
+
+      # 步骤 9: 解压文件并设置权限
+      - name: Extract files and set permissions
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            cd /www/wwwroot/huanst.cn
+            tar -xzf dist.tar.gz
+            rm dist.tar.gz
+            
+            # 设置正确的权限
+            sudo chown -R www-data:www-data .
+            sudo chmod -R 755 .
+            
+            echo "Deployment completed"
