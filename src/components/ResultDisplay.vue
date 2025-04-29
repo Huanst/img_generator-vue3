@@ -79,7 +79,7 @@
 
       <div class="tip-text">
         <el-icon><InfoFilled /></el-icon>
-        <span>点击图像可查看大图，右击可保存</span>
+        <span>点击图像可查看大图</span>
       </div>
     </glassmorphic-card>
   </div>

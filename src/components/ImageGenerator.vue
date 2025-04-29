@@ -1,7 +1,7 @@
 <template>
   <glassmorphic-card variant="primary" :showGlow="true">
     <div class="generator-header">
-      <h2 class="generator-title">AI 图像生成</h2>
+      <h2 class="generator-title">文字生成图像</h2>
       <div class="header-actions">
         <el-tooltip content="上传参考图片 (将转换为WebP格式)" placement="top">
           <div
@@ -282,8 +282,8 @@ const generateImage = async () => {
     // 构建请求参数
     const requestParams = {
       prompt: prompt.value.trim(),
-      n: Math.max(1, Math.min(4, parseInt(imageCount.value))),
-      size: `${width.value}x${height.value}`,
+      batch_size: Math.max(1, Math.min(4, parseInt(imageCount.value))),
+      image_size: `${width.value}x${height.value}`,
       model: 'Kwai-Kolors/Kolors',
     }
 
@@ -301,14 +301,12 @@ const generateImage = async () => {
         )
       }
 
-      // 检查图片尺寸，base64编码通常会比原始数据大约增加33%的大小
-      // 估算原始大小不超过10MB (API可能有文件大小限制)
+      // 恢复 base64 估算大小检查
       const base64Data = imageData.split(',')[1]
       const approximateSize = (base64Data.length * 3) / 4 // bytes
-
       if (approximateSize > 10 * 1024 * 1024) {
         // 10MB
-        throw new Error('参考图片太大，请上传较小的图片')
+        throw new Error('参考图片太大 (超过约10MB)，请上传较小的图片')
       }
 
       // 添加到请求参数中
@@ -324,7 +322,7 @@ const generateImage = async () => {
         1,
         Math.min(20, parseFloat(guidanceScale.value))
       )
-      requestParams.steps = Math.max(20, Math.min(50, parseInt(steps.value)))
+      requestParams.num_inference_steps = Math.max(1, Math.min(100, parseInt(steps.value)))
     }
 
     // 验证API密钥
@@ -429,13 +427,6 @@ const triggerFileUpload = () => {
 const handleFileUpload = event => {
   const file = event.target.files[0]
   if (file) {
-    if (file.size > 5 * 1024 * 1024) {
-      // 5MB大小限制
-      emit('error', { message: '图片大小不能超过5MB' })
-      event.target.value = '' // 清空input
-      return
-    }
-
     isUploading.value = true
 
     // 如果存在之前的清理函数，先调用它
@@ -472,12 +463,12 @@ const handleFileUpload = event => {
         const ctx = canvas.getContext('2d')
         ctx.drawImage(img, 0, 0)
 
-        // 将Canvas内容转换为webp格式
+        // 将Canvas内容转换为png格式
         try {
-          const webpData = canvas.toDataURL('image/webp', 0.9)
+          const pngData = canvas.toDataURL('image/png')
 
-          // 格式为 "data:image/webp;base64,XXX" (注意：不带空格)
-          const formattedData = webpData
+          // 格式为 "data:image/png;base64,XXX"
+          const formattedData = pngData
 
           // 设置上传的图片
           if (isComponentMounted) {
@@ -485,7 +476,7 @@ const handleFileUpload = event => {
             uploadedImage.value = formattedData
             isUploading.value = false
             console.log(
-              '图片转换成功，格式:',
+              '图片转换成功 (PNG)，格式:',
               formattedData.substring(0, 40) + '...'
             )
           }
