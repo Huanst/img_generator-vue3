@@ -44,7 +44,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           source: "dist/*"
-          target: "/model/blog/build/"  #推送到这个路径下， 这是我的打包好的项目路径，要更换成你的
+          target: "/www/wwwroot/huanst.cn"  #推送到这个路径下， 这是我的打包好的项目路径，要更换成你的
           strip_components: 1
           
       - name: Cleanup
