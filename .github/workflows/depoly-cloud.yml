@@ -30,6 +30,11 @@ jobs:
       - name: Install Dependencies
         run: pnpm install
 
+      # 配置apikey
+      - name: Generate .env.local file
+        run: |
+          echo "API_KEY=${{ secrets.API_KEY }}" >> .env.local
+
       # 步骤 5: 构建项目
       - name: Build
         run: pnpm build
