@@ -35,18 +35,15 @@ jobs:
       - name: Build
         run: pnpm build # 执行项目的构建脚本
 
-      # 步骤 6: 准备部署
-      - name: Prepare for deployment
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-
-      # 步骤 7: 部署到服务器
+      # 步骤 6: 部署到服务器
       - name: Deploy to Server
-        run: |
-          rsync -avz -e "ssh -i ~/.ssh/deploy_key" \
-            --delete \
-            dist/ \
-            ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:/www/wwwroot/huanst.cn/
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "dist/*"
+          target: "/www/wwwroot/huanst.cn"
+          strip_components: 1
+          debug: true
