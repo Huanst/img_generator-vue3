@@ -42,9 +42,29 @@ jobs:
           chmod 600 ~/.ssh/deploy_key
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-      # 步骤 7: 部署到服务器
+      # 步骤 7: 准备目标目录
+      - name: Prepare target directory
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} '
+            sudo chown -R $USER:$USER /www/wwwroot/huanst.cn &&
+            sudo chmod -R 755 /www/wwwroot/huanst.cn &&
+            rm -rf /www/wwwroot/huanst.cn/* &&
+            echo "Directory prepared"
+          '
+
+      # 步骤 8: 部署到服务器
       - name: Deploy
         env:
           SSH_AUTH_SOCK: /dev/null
         run: |
           scp -i ~/.ssh/deploy_key -r dist/* ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:/www/wwwroot/huanst.cn/
+          
+      # 步骤 9: 恢复目录权限
+      - name: Restore permissions
+        if: always()
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }} '
+            sudo chown -R www-data:www-data /www/wwwroot/huanst.cn &&
+            sudo chmod -R 755 /www/wwwroot/huanst.cn &&
+            echo "Permissions restored"
+          '
