@@ -46,9 +46,4 @@ jobs:
           source: "dist/*"
           target: "/www/wwwroot/huanst.cn"  #推送到这个路径下， 这是我的打包好的项目路径，要更换成你的
           strip_components: 1
-          
-      - name: Cleanup
-        if: always()
-        run: |
-          rm -rf build
-          rm -rf .docusaurus
+
