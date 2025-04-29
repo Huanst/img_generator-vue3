@@ -41,7 +41,7 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          key: ${{ secrets.SERVER_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           source: "dist/*"
           target: "/www/wwwroot/huanst.cn"  #推送到这个路径下， 这是我的打包好的项目路径，要更换成你的
