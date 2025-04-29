@@ -51,13 +51,8 @@ jobs:
           key: ${{ secrets.SERVER_PRIVATE_KEY }}
           port: ${{ secrets.SERVER_PORT }}
           script: |
-            # 创建临时目录
-            TEMP_DIR=$(mktemp -d)
-            
-            # 确保目标目录存在
+            # 确保目标目录存在并清理
             mkdir -p /www/wwwroot/huanst.cn
-            
-            # 清理目标目录
             rm -rf /www/wwwroot/huanst.cn/*
             
             echo "Target directory cleaned"
@@ -86,8 +81,11 @@ jobs:
             tar -xzf dist.tar.gz
             rm dist.tar.gz
             
-            # 设置正确的权限
-            sudo chown -R www-data:www-data .
-            sudo chmod -R 755 .
+            # 设置文件所有者为当前用户
+            sudo chown -R $USER:$USER .
+            # 设置目录权限为 755
+            sudo find . -type d -exec chmod 755 {} \;
+            # 设置文件权限为 644
+            sudo find . -type f -exec chmod 644 {} \;
             
             echo "Deployment completed"
