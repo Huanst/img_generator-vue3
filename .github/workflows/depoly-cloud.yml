@@ -1,4 +1,4 @@
-# 你可以参考我的工作流配置
+# 部署到服务器的工作流配置
 name: Deploy to Server
 
 on:
@@ -7,43 +7,44 @@ on:
       - main  # 当 main 分支有提交时触发
 
 jobs:
-  deploy-server:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    # 作业中的执行步骤
     steps:
       # 步骤 1: 检出代码
       - name: Checkout code
-        uses: actions/checkout@v4 # 使用官方的 checkout Action，从仓库检出代码
+        uses: actions/checkout@v4
 
-      # 步骤 2: 设置 Node.js 环境
+      # 步骤 2: 设置 Node.js
       - name: Setup Node.js
-        uses: actions/setup-node@v4 # 使用官方的 Node.js Action
+        uses: actions/setup-node@v4
         with:
-          node-version: '20' # 指定使用的 Node.js 版本为 20
+          node-version: '20'
 
-      # 步骤 3: 安装 pnpm（Node.js 的包管理工具）
+      # 步骤 3: 安装 pnpm
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2 # 使用 pnpm 的官方 GitHub Action
+        uses: pnpm/action-setup@v2
         with:
-          version: '9.8.0' # 指定安装的 pnpm 版本为 9.8.0
+          version: '9.8.0'
 
       # 步骤 4: 安装依赖
       - name: Install Dependencies
-        run: pnpm install # 使用 pnpm 安装项目依赖
+        run: pnpm install
 
       # 步骤 5: 构建项目
       - name: Build
-        run: pnpm build # 执行项目的构建脚本
+        run: pnpm build
 
-      # 步骤 6: 部署到服务器
-      - name: Deploy to Server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SERVER_PRIVATE_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
-          source: "dist/*"
-          target: "/www/wwwroot/huanst.cn"
-          strip_components: 1
-          debug: true
+      # 步骤 6: 配置 SSH
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      # 步骤 7: 部署到服务器
+      - name: Deploy
+        env:
+          SSH_AUTH_SOCK: /dev/null
+        run: |
+          scp -i ~/.ssh/deploy_key -r dist/* ${{ secrets.SERVER_USERNAME }}@${{ secrets.SERVER_HOST }}:/www/wwwroot/huanst.cn/
