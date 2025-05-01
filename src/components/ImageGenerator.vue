@@ -213,6 +213,16 @@ const guidanceScale = ref(7)
 const steps = ref(30)
 const imageCount = ref(1)
 
+// 添加清理函数引用
+let cleanupFunction = null
+
+// 组件卸载时清理资源
+onUnmounted(() => {
+  if (typeof cleanupFunction === 'function') {
+    cleanupFunction()
+  }
+})
+
 // 预设的分辨率选项
 const sizeOptions = [
   { value: '1024x1024', label: '1024×1024', width: 1024, height: 1024 },
@@ -247,16 +257,6 @@ const updateSelectedSize = () => {
 const uploadedImage = ref(null)
 const fileInput = ref(null)
 const isUploading = ref(false)
-
-// 添加清理函数引用
-let cleanupFunction = null
-
-// 组件卸载时清理资源
-onUnmounted(() => {
-  if (typeof cleanupFunction === 'function') {
-    cleanupFunction()
-  }
-})
 */
 
 const emit = defineEmits(['imagesGenerated', 'error'])
