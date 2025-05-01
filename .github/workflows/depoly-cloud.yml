@@ -1,4 +1,4 @@
-name: Deploy to Server
+name: 部署到服务器
 
 on:
   push:
@@ -10,38 +10,36 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # 步骤 1: 检出代码
-      - name: Checkout code
+      - name: 检出代码
         uses: actions/checkout@v4
 
       # 步骤 2: 设置 Node.js
-      - name: Setup Node.js
+      - name: 设置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       # 步骤 3: 安装 pnpm
-      - name: Setup pnpm
+      - name: 安装 pnpm
         uses: pnpm/action-setup@v2
         with:
           version: '9.8.0'
 
       # 步骤 4: 安装依赖
-      - name: Install Dependencies
+      - name: 安装依赖
         run: pnpm install
 
-      # 配置 apikey
-      - name: Generate .env.local file
+      # 生成.env.local文件来存放APIKEY
+      - name: 生成.env.local文件来存放APIKEY
         run: |
           echo "VITE_SILICONFLOW_API_KEY=${{ secrets.API_KEY }}" >> .env.local
-          # 如果你的 Vue 应用使用 VUE_APP_ 前缀
-          # echo "VUE_APP_API_KEY=${{ secrets.API_KEY }}" >> .env.local
 
       # 步骤 5: 构建项目
-      - name: Build
+      - name: 构建项目
         run: pnpm build
 
       # 步骤 6: 配置 SSH
-      - name: Setup SSH
+      - name: 配置 SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SERVER_PRIVATE_KEY }}" > ~/.ssh/deploy_key
@@ -49,7 +47,7 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
       # 步骤 7: 清理并部署
-      - name: Deploy
+      - name: 清理并部署
         env:
           SSH_AUTH_SOCK: /dev/null
         run: |
