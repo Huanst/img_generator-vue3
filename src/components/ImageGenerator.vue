@@ -2,6 +2,7 @@
   <glassmorphic-card variant="primary" :showGlow="true">
     <div class="generator-header">
       <h2 class="generator-title">文字生成图像</h2>
+      <!-- 注释掉上传图片功能
       <div class="header-actions">
         <el-tooltip content="上传参考图片 (将转换为WebP格式)" placement="top">
           <div
@@ -19,8 +20,10 @@
           </div>
         </el-tooltip>
       </div>
+      -->
     </div>
 
+    <!-- 注释掉上传图片预览
     <div v-if="uploadedImage" class="uploaded-image-preview">
       <div class="preview-header">
         <span>参考图片 <small>(已转换为WebP格式)</small></span>
@@ -35,6 +38,7 @@
         </div>
       </div>
     </div>
+    -->
 
     <el-form label-position="top">
       <el-form-item>
@@ -189,11 +193,11 @@
 import { ref, onUnmounted, watch } from 'vue'
 import {
   MagicStick,
-  Upload,
-  Loading,
+  // Upload,  // 注释掉未使用的图标
+  // Loading,
   InfoFilled,
   ArrowDown,
-  Close,
+  // Close,
   Expand,
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
@@ -238,6 +242,8 @@ const updateSelectedSize = () => {
   selectedSize.value = matchedOption ? matchedOption.value : 'custom'
 }
 
+// 注释掉上传图片相关的变量和函数
+/*
 const uploadedImage = ref(null)
 const fileInput = ref(null)
 const isUploading = ref(false)
@@ -251,6 +257,7 @@ onUnmounted(() => {
     cleanupFunction()
   }
 })
+*/
 
 const emit = defineEmits(['imagesGenerated', 'error'])
 
@@ -288,6 +295,7 @@ const generateImage = async () => {
     }
 
     // 如果有上传的参考图片，添加到请求中
+    /*
     if (uploadedImage.value) {
       // 检查base64格式
       let imageData = uploadedImage.value
@@ -312,6 +320,7 @@ const generateImage = async () => {
       // 添加到请求参数中
       requestParams.image = imageData
     }
+    */
 
     // 添加可选参数
     if (showAdditionalOptions.value) {
@@ -420,6 +429,8 @@ const handleGenerate = () => {
   generateImage()
 }
 
+// 注释掉上传图片相关的函数
+/*
 const triggerFileUpload = () => {
   fileInput.value.click()
 }
@@ -515,6 +526,7 @@ const handleFileUpload = event => {
 const removeUploadedImage = () => {
   uploadedImage.value = null
 }
+*/
 
 // 监听分辨率选择变化
 watch(selectedSize, (newVal) => {
