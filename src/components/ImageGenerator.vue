@@ -186,6 +186,10 @@
         </el-button>
       </div>
     </el-form>
+    <ResultDisplay 
+      :images="generatedImages" 
+      :imageSize="`${width}×${height}`"
+    />
   </glassmorphic-card>
 </template>
 
@@ -202,6 +206,7 @@ import {
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import axios from 'axios'
+import ResultDisplay from './ResultDisplay.vue'
 
 const loading = ref(false)
 const showAdditionalOptions = ref(false)
@@ -387,6 +392,9 @@ const generateImage = async () => {
       throw new Error('未能获取到图片URL')
     }
 
+    // 添加尺寸信息到响应数据
+    response.data.imageSize = `${width.value}×${height.value}`
+    
     emit('imagesGenerated', response.data)
   } catch (error) {
     // 如果组件已卸载，不继续处理错误

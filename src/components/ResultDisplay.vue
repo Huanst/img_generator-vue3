@@ -11,7 +11,7 @@
           @click="downloadAllImages">
           <el-icon v-if="!downloadingAll"><Download /></el-icon>
           <el-icon v-else class="is-loading"><Loading /></el-icon>
-          <span>{{ downloadingAll ? '打开中...' : '打开全部' }}</span>
+          <span>{{ downloadingAll ? '打开中...' : '下载全部' }}</span>
         </el-button>
       </div>
 
@@ -21,12 +21,12 @@
           <div class="stat-label">图像</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">{{ getImageSize(images[0]?.url) }}</div>
+          <div class="stat-value">{{ getImageSize() }}</div>
           <div class="stat-label">尺寸</div>
         </div>
         <div class="stat-item" v-if="createdTime">
           <div class="stat-value">{{ createdTime }}</div>
-          <div class="stat-label">时间</div>
+          <div class="stat-label">生成时间</div>
         </div>
       </div>
 
@@ -59,7 +59,7 @@
           </el-image>
 
           <div class="image-actions">
-            <el-tooltip content="在新标签页中打开" placement="top">
+            <el-tooltip content="下载" placement="top">
               <el-button
                 class="action-btn"
                 :loading="downloadingIndex === index"
@@ -102,6 +102,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  imageSize: {
+    type: String,
+    default: ''
+  }
 })
 
 const downloadingIndex = ref(-1)
@@ -163,63 +167,16 @@ const createdTime = computed(() => {
   return new Date().toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit'
   })
 })
 
-const getImageSize = url => {
-  if (!url) return '未知'
-
-  // 从URL中提取尺寸信息的正则表达式
-  const sizeRegex = /(\d+)[xX×](\d+)/
-  const match = url.match(sizeRegex)
-
-  // 尝试从URL中提取尺寸
-  if (match) {
-    return `${match[1]}×${match[2]}`
+const getImageSize = () => {
+  // 优先使用传入的尺寸信息
+  if (props.imageSize) {
+    return props.imageSize
   }
-
-  // 备用检测：检查常用尺寸
-  if (url.includes('1024x1024') || url.includes('1024')) {
-    return '1024×1024'
-  } else if (url.includes('512x512') || url.includes('512')) {
-    return '512×512'
-  } else if (url.includes('768x768') || url.includes('768')) {
-    return '768×768'
-  }
-
-  // 如果无法从URL中提取尺寸，创建一个图片元素来获取实际尺寸
-  const img = new Image()
-  img.src = url
-
-  // 设置一个定时器，如果5秒内没有加载完成，显示未知
-  const timeoutPromise = new Promise((_, reject) => {
-    setTimeout(() => reject(new Error('获取尺寸超时')), 5000)
-  })
-
-  // 创建加载图片的Promise
-  const loadPromise = new Promise(resolve => {
-    img.onload = () => {
-      resolve(`${img.naturalWidth}×${img.naturalHeight}`)
-    }
-    img.onerror = () => {
-      resolve('未知')
-    }
-  })
-
-  // 使用Promise.race来处理超时情况
-  return Promise.race([loadPromise, timeoutPromise])
-    .then(size => {
-      if (isMounted.value) {
-        return size
-      }
-      return '未知'
-    })
-    .catch(() => {
-      if (isMounted.value) {
-        return '未知'
-      }
-      return '未知'
-    })
+  return '未知'
 }
 
 const downloadImage = async (url, index) => {

@@ -60,10 +60,22 @@ const handleUnhandledRejection = event => {
   }
 }
 
+// 优化鼠标移动处理函数
+const handleMouseMove = (e) => {
+  const mouseGlow = document.querySelector('.mouse-glow')
+  if (mouseGlow) {
+    const x = (e.clientX / window.innerWidth) * 100
+    const y = (e.clientY / window.innerHeight) * 100
+    mouseGlow.style.setProperty('--mouse-x', `${x}%`)
+    mouseGlow.style.setProperty('--mouse-y', `${y}%`)
+  }
+}
+
 // 监听全局错误
 onMounted(() => {
   window.addEventListener('error', handleGlobalError)
   window.addEventListener('unhandledrejection', handleUnhandledRejection)
+  window.addEventListener('mousemove', handleMouseMove)
 
   // 检查浏览器兼容性
   if (!window.fetch) {
@@ -85,6 +97,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('error', handleGlobalError)
   window.removeEventListener('unhandledrejection', handleUnhandledRejection)
+  window.removeEventListener('mousemove', handleMouseMove)
 })
 
 const handleImagesGenerated = data => {
@@ -110,10 +123,9 @@ const scrollToResults = () => {
 
 <template>
   <div class="app-container">
-    <div class="tech-background">
-      <div class="tech-grid"></div>
-      <div class="tech-circles"></div>
-    </div>
+    <!-- 背景层 -->
+    <div class="app-background"></div>
+    <div class="mouse-glow"></div>
 
     <div class="content-container">
       <header class="app-header">
@@ -221,19 +233,29 @@ const scrollToResults = () => {
 
 /* 亮色模式变量 - 手动设置时使用 */
 :root[data-theme='light'] {
-  --primary-color: #4646d9;
-  --secondary-color: #2980b9;
-  --accent-color: #0078cc;
-  --background-dark: #f0f4f8;
-  --card-bg: rgba(255, 255, 255, 0.75);
-  --text-color: #1a1a2e;
-  --text-secondary: rgba(0, 0, 0, 0.65);
-  --border-color: rgba(0, 0, 0, 0.1);
-  /* 滑块轨道颜色 - 浅色模式 */
-  --slider-track-bg: #e0e0e0;
-  --slider-track-bg-hover: #d0d0d0;
+  --primary-color: #1976d2;
+  --secondary-color: #2196f3;
+  --accent-color: #42a5f5;
+  --background-dark: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --text-color: #2c3e50;
+  --text-secondary: rgba(44, 62, 80, 0.7);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --slider-track-bg: rgba(0, 0, 0, 0.08);
+  --slider-track-bg-hover: rgba(0, 0, 0, 0.12);
 }
 
+/* 优化卡片玻璃态效果 */
+:root[data-theme='light'] .glassmorphic-card {
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
+  background: var(--card-bg) !important;
+}
+
+/* 重置基础样式 */
 * {
   margin: 0;
   padding: 0;
@@ -244,31 +266,103 @@ html,
 body {
   height: 100%;
   width: 100%;
-  overflow-x: hidden; /* 防止横向滚动 */
-  overscroll-behavior: none; /* 防止回弹和连锁滚动 */
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
 body {
   font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  color: var(--text-color);
-  background-color: var(--background-dark);
-  line-height: 1.6;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* 整体内容水平居中 */
-  justify-content: flex-start;
-  -webkit-font-smoothing: antialiased; /* 字体渲染优化 */
+  -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
-  overflow-y: auto; /* 确保body是主滚动容器 */
 }
 
+/* 修复背景和动效 */
 #app {
-  width: 100%;
-  height: 100%;
+  position: relative;
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  color: var(--text-color);
+}
+
+/* 背景渐变 */
+.app-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -2;
+  background: linear-gradient(135deg, 
+    #e8f4ff 0%,
+    #e0f1ff 20%,
+    #d8edff 40%,
+    #d0eaff 60%,
+    #c8e6ff 80%,
+    #c0e3ff 100%
+  );
+  transition: all 0.3s ease;
+}
+
+/* 暗色主题背景 */
+:root[data-theme='dark'] .app-background {
+  background: linear-gradient(135deg, 
+    #1a1f25 0%,
+    #23292f 20%,
+    #2c333a 40%,
+    #353d45 60%,
+    #3e474f 80%,
+    #475159 100%
+  );
+}
+
+/* 鼠标光晕效果 */
+.mouse-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.7;
+  mix-blend-mode: multiply;
+  transition: background 0.15s ease;
+}
+
+/* 亮色主题下的光晕 */
+:root[data-theme='light'] .mouse-glow {
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(100, 181, 246, 0.15) 0%,
+    transparent 50%
+  );
+}
+
+/* 暗色主题下的光晕 */
+:root[data-theme='dark'] .mouse-glow {
+  background: radial-gradient(
+    circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(255, 255, 255, 0.12) 0%,
+    transparent 50%
+  );
+  mix-blend-mode: soft-light;
+}
+
+.content-container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--max-content-width);
+  margin: 0 auto;
+  padding: 20px;
+  flex: 1;
 }
 
 .app-container {
@@ -342,17 +436,6 @@ body {
       transparent 30%
     );
   z-index: -1;
-}
-
-.content-container {
-  width: 100%;
-  max-width: var(--max-content-width);
-  margin: 0 auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* 内容水平居中 */
-  flex: 1;
 }
 
 .app-header {
@@ -582,5 +665,63 @@ body {
 
 .theme-icon.is-dark {
   transform: rotate(-15deg);
+}
+
+/* 亮色主题变量 */
+:root[data-theme='light'] {
+  --primary-color: #1976d2;
+  --secondary-color: #2196f3;
+  --accent-color: #42a5f5;
+  --background-dark: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --text-color: #2c3e50;
+  --text-secondary: rgba(44, 62, 80, 0.7);
+  --border-color: rgba(0, 0, 0, 0.08);
+  --slider-track-bg: rgba(0, 0, 0, 0.08);
+  --slider-track-bg-hover: rgba(0, 0, 0, 0.12);
+}
+
+/* 暗色主题变量 */
+:root[data-theme='dark'] {
+  --primary-color: #5352ed;
+  --secondary-color: #3498db;
+  --accent-color: #00c9ff;
+  --background-dark: #10101e;
+  --card-bg: rgba(255, 255, 255, 0.07);
+  --text-color: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --border-color: rgba(255, 255, 255, 0.1);
+  --slider-track-bg: rgba(255, 255, 255, 0.1);
+  --slider-track-bg-hover: rgba(255, 255, 255, 0.15);
+}
+
+/* 优化卡片玻璃态效果 */
+.glassmorphic-card {
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.2),
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  background: var(--card-bg) !important;
+}
+
+/* 添加微光效果 */
+.glassmorphic-card::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 50%,
+    transparent
+  );
+  z-index: -1;
+  opacity: 0.5;
 }
 </style>
