@@ -22,6 +22,11 @@ pnpm dev
 pnpm build
 ```
 
+硅基流动 apikey 获取地址：
+https://cloud.siliconflow.cn/i/ub4Y8OWs
+邀请码：ub4Y8OWs
+注册后点击API密钥 → 新建API密钥，然后复制下来填写在.env.local里即可使用
+
 ## 部署
 
 项目使用 GitHub Actions 自动部署到服务器。
