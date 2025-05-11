@@ -21,6 +21,18 @@
         </el-tooltip>
       </div>
       -->
+
+      <!-- 添加主题切换按钮到右上角 -->
+      <div class="theme-toggle">
+        <button
+          @click="handleToggleTheme"
+          class="theme-btn"
+          :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
+          <i class="theme-icon" :class="{ 'is-dark': isDarkMode }">
+            {{ isDarkMode ? '🌙' : '☀️' }}
+          </i>
+        </button>
+      </div>
     </div>
 
     <!-- 注释掉上传图片预览
@@ -102,8 +114,8 @@
         </el-form-item>
 
         <el-form-item label="生成数量" class="form-item-col">
-          <el-select 
-            v-model="imageCount" 
+          <el-select
+            v-model="imageCount"
             placeholder="选择生成数量"
             class="count-select"
             :disabled="loading">
@@ -138,9 +150,20 @@
                   :max="20"
                   :step="0.5"
                   :disabled="loading"
-                  :format-tooltip="value => Math.floor(value) === value ? value.toString() : value.toFixed(1)"
+                  :format-tooltip="
+                    value =>
+                      Math.floor(value) === value
+                        ? value.toString()
+                        : value.toFixed(1)
+                  "
                   class="guidance-scale-slider" />
-                <div class="slider-value">{{ Math.floor(guidanceScale) === guidanceScale ? guidanceScale : guidanceScale.toFixed(1) }}</div>
+                <div class="slider-value">
+                  {{
+                    Math.floor(guidanceScale) === guidanceScale
+                      ? guidanceScale
+                      : guidanceScale.toFixed(1)
+                  }}
+                </div>
               </div>
             </el-form-item>
 
@@ -186,10 +209,9 @@
         </el-button>
       </div>
     </el-form>
-    <ResultDisplay 
-      :images="generatedImages" 
-      :imageSize="`${width}×${height}`"
-    />
+    <ResultDisplay
+      :images="generatedImages"
+      :imageSize="`${width}×${height}`" />
   </glassmorphic-card>
 </template>
 
@@ -207,6 +229,14 @@ import {
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import axios from 'axios'
 import ResultDisplay from './ResultDisplay.vue'
+
+// 接收从父组件传来的isDarkMode和toggleTheme
+const props = defineProps({
+  isDarkMode: {
+    type: Boolean,
+    default: true,
+  },
+})
 
 const loading = ref(false)
 const showAdditionalOptions = ref(false)
@@ -235,13 +265,13 @@ const sizeOptions = [
   { value: '768x1024', label: '768×1024', width: 768, height: 1024 },
   { value: '720x1440', label: '720×1440', width: 720, height: 1440 },
   { value: '720x1280', label: '720×1280', width: 720, height: 1280 },
-  { value: 'custom', label: '自定义尺寸' }
+  { value: 'custom', label: '自定义尺寸' },
 ]
 
 const selectedSize = ref('1024x1024')
 
 // 设置预设分辨率
-const setPresetSize = (value) => {
+const setPresetSize = value => {
   const option = sizeOptions.find(opt => opt.value === value)
   if (option && option.value !== 'custom') {
     width.value = option.width
@@ -264,7 +294,12 @@ const fileInput = ref(null)
 const isUploading = ref(false)
 */
 
-const emit = defineEmits(['imagesGenerated', 'error'])
+const emit = defineEmits(['imagesGenerated', 'error', 'toggleTheme'])
+
+// 处理主题切换
+const handleToggleTheme = () => {
+  emit('toggleTheme')
+}
 
 const generateImage = async () => {
   if (!prompt.value.trim()) {
@@ -336,7 +371,10 @@ const generateImage = async () => {
         1,
         Math.min(20, parseFloat(guidanceScale.value))
       )
-      requestParams.num_inference_steps = Math.max(1, Math.min(100, parseInt(steps.value)))
+      requestParams.num_inference_steps = Math.max(
+        1,
+        Math.min(100, parseInt(steps.value))
+      )
     }
 
     // 验证API密钥
@@ -394,7 +432,7 @@ const generateImage = async () => {
 
     // 添加尺寸信息到响应数据
     response.data.imageSize = `${width.value}×${height.value}`
-    
+
     emit('imagesGenerated', response.data)
   } catch (error) {
     // 如果组件已卸载，不继续处理错误
@@ -537,7 +575,7 @@ const removeUploadedImage = () => {
 */
 
 // 监听分辨率选择变化
-watch(selectedSize, (newVal) => {
+watch(selectedSize, newVal => {
   setPresetSize(newVal)
 })
 
@@ -553,6 +591,7 @@ watch([width, height], () => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  position: relative;
 }
 
 .generator-title {
@@ -715,7 +754,11 @@ watch([width, height], () => {
 :deep(.el-slider__bar) {
   height: var(--el-slider-height);
   border-radius: calc(var(--el-slider-height) / 2);
-  background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+  background: linear-gradient(
+    90deg,
+    var(--secondary-color),
+    var(--primary-color)
+  );
 }
 
 :deep(.el-slider__button) {
@@ -1017,5 +1060,40 @@ watch([width, height], () => {
   :deep(.el-form) {
     width: 100%;
   }
+}
+
+/* 添加主题切换按钮样式 */
+.theme-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.theme-btn {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.theme-btn:hover {
+  transform: rotate(15deg);
+  background: var(--primary-color);
+  color: white;
+}
+
+.theme-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.theme-icon.is-dark {
+  transform: rotate(-15deg);
 }
 </style>

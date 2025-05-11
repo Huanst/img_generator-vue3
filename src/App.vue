@@ -61,7 +61,7 @@ const handleUnhandledRejection = event => {
 }
 
 // 优化鼠标移动处理函数
-const handleMouseMove = (e) => {
+const handleMouseMove = e => {
   const mouseGlow = document.querySelector('.mouse-glow')
   if (mouseGlow) {
     const x = (e.clientX / window.innerWidth) * 100
@@ -129,23 +129,7 @@ const scrollToResults = () => {
 
     <div class="content-container">
       <header class="app-header">
-        <div class="logo-container">
-          <div class="logo-icon">AI</div>
-        </div>
-        <!-- <h1>AI 图像生成器</h1>
-        <p class="app-subtitle">基于人工智能的高质量图像合成工具</p> -->
-
-        <!-- 主题切换按钮 -->
-        <div class="theme-toggle">
-          <button
-            @click="toggleTheme"
-            class="theme-btn"
-            :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
-            <i class="theme-icon" :class="{ 'is-dark': isDarkMode }">
-              {{ isDarkMode ? '🌙' : '☀️' }}
-            </i>
-          </button>
-        </div>
+        <!-- 删除主题切换按钮 -->
       </header>
 
       <main class="app-main">
@@ -163,7 +147,9 @@ const scrollToResults = () => {
           <div class="generator-section">
             <image-generator
               @images-generated="handleImagesGenerated"
-              @error="handleError" />
+              @error="handleError"
+              :isDarkMode="isDarkMode"
+              @toggleTheme="toggleTheme" />
           </div>
 
           <div class="results-section" v-if="generatedImages.length">
@@ -175,7 +161,7 @@ const scrollToResults = () => {
       <footer class="app-footer">
         <p>
           <a
-            href="http://www.beian.miit.gov.cn"
+            href="https://beian.miit.gov.cn/#/Integrated/recordQuery"
             target="_blank"
             class="beian-link"
             >滇ICP备2025050068号-1</a
@@ -248,7 +234,7 @@ const scrollToResults = () => {
 /* 优化卡片玻璃态效果 */
 :root[data-theme='light'] .glassmorphic-card {
   backdrop-filter: blur(10px);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.06),
     0 2px 8px rgba(0, 0, 0, 0.04),
     inset 0 0 0 1px rgba(255, 255, 255, 0.7);
@@ -299,7 +285,8 @@ body {
   right: 0;
   bottom: 0;
   z-index: -2;
-  background: linear-gradient(135deg, 
+  background: linear-gradient(
+    135deg,
     #e8f4ff 0%,
     #e0f1ff 20%,
     #d8edff 40%,
@@ -312,7 +299,8 @@ body {
 
 /* 暗色主题背景 */
 :root[data-theme='dark'] .app-background {
-  background: linear-gradient(135deg, 
+  background: linear-gradient(
+    135deg,
     #1a1f25 0%,
     #23292f 20%,
     #2c333a 40%,
@@ -396,7 +384,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: linear-gradient(
+  background-image:
+    linear-gradient(
       rgba(var(--text-color, 26, 32, 66), 0.05) 1px,
       transparent 1px
     ),
@@ -415,7 +404,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(
+  background:
+    radial-gradient(
       circle at 15% 10%,
       rgba(var(--primary-color, 83, 82, 237), 0.12) 0%,
       transparent 30%
@@ -632,41 +622,6 @@ body {
   color: var(--accent-color);
 }
 
-/* 添加主题切换按钮样式 */
-.theme-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-}
-
-.theme-btn {
-  background: var(--card-bg);
-  border: 1px solid rgba(var(--text-color), 0.1);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.theme-btn:hover {
-  transform: rotate(15deg);
-  background: var(--primary-color);
-  color: white;
-}
-
-.theme-icon {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.theme-icon.is-dark {
-  transform: rotate(-15deg);
-}
-
 /* 亮色主题变量 */
 :root[data-theme='light'] {
   --primary-color: #1976d2;
@@ -698,7 +653,7 @@ body {
 /* 优化卡片玻璃态效果 */
 .glassmorphic-card {
   backdrop-filter: blur(10px);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.2),
     0 2px 8px rgba(0, 0, 0, 0.1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
