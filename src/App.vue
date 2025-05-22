@@ -2,10 +2,19 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import ImageGenerator from './components/ImageGenerator.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
+import LoginPage from './components/LoginPage.vue'
+import RegisterPage from './components/RegisterPage.vue'
+import axios from 'axios'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
+const isLoggedIn = ref(false) // 用户登录状态
+const currentPage = ref('login') // 当前页面: login, register, main
+const userInfo = ref(null) // 用户信息
+
+// API基础URL
+const API_BASE_URL = 'http://localhost:5001/api'
 
 // 检测系统主题偏好
 const detectSystemTheme = () => {
@@ -71,6 +80,93 @@ const handleMouseMove = e => {
   }
 }
 
+// 用户登录成功处理
+const handleLogin = userData => {
+  isLoggedIn.value = true
+  userInfo.value = userData
+  currentPage.value = 'main'
+
+  // 设置全局Authorization头
+  const token =
+    localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+  if (token) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+  }
+}
+
+// 处理注册成功后的逻辑
+const handleRegisterSuccess = data => {
+  // 这里可以保存一些注册信息
+  console.log('注册成功:', data)
+}
+
+// 切换到登录页面
+const goToLogin = () => {
+  currentPage.value = 'login'
+}
+
+// 切换到注册页面
+const goToRegister = () => {
+  currentPage.value = 'register'
+}
+
+// 用户登出
+const handleLogout = () => {
+  isLoggedIn.value = false
+  userInfo.value = null
+  currentPage.value = 'login'
+
+  // 清除所有存储的认证信息
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('user_info')
+  sessionStorage.removeItem('auth_token')
+  sessionStorage.removeItem('user_info')
+
+  // 清除Authorization头
+  delete axios.defaults.headers.common['Authorization']
+}
+
+// 检查本地存储的登录信息
+const checkStoredLogin = () => {
+  // 首先检查是否有token
+  const token =
+    localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
+  const storedUser =
+    localStorage.getItem('user_info') || sessionStorage.getItem('user_info')
+
+  if (token && storedUser) {
+    try {
+      // 设置全局Authorization头
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+
+      // 解析用户信息
+      userInfo.value = JSON.parse(storedUser)
+      isLoggedIn.value = true
+      currentPage.value = 'main'
+
+      // 可以选择验证token是否有效
+      // validateToken(token)
+    } catch (error) {
+      console.error('解析存储的用户信息失败:', error)
+      handleLogout() // 出错时登出
+    }
+  }
+}
+
+// 验证token是否有效（可选）
+const validateToken = token => {
+  // 这里可以添加一个对后端API的请求，验证token是否有效
+  // axios.post(`${API_BASE_URL}/auth/validate-token`)
+  //   .then(response => {
+  //     if (!response.data.valid) {
+  //       handleLogout()
+  //     }
+  //   })
+  //   .catch(() => {
+  //     handleLogout()
+  //   })
+}
+
 // 监听全局错误
 onMounted(() => {
   window.addEventListener('error', handleGlobalError)
@@ -91,6 +187,9 @@ onMounted(() => {
   // 初始化主题设置
   detectSystemTheme()
   setupThemeListener()
+
+  // 检查存储的登录信息
+  checkStoredLogin()
 })
 
 // 清理事件监听器
@@ -102,6 +201,10 @@ onUnmounted(() => {
 
 const handleImagesGenerated = data => {
   generatedImages.value = data.data || []
+  // 保存图像尺寸信息
+  if (data.imageSize) {
+    generatedImages.value.imageSize = data.imageSize
+  }
   scrollToResults()
 }
 
@@ -119,6 +222,11 @@ const scrollToResults = () => {
     }, 300)
   }
 }
+
+// 清空生成的图像结果
+const clearGeneratedImages = () => {
+  generatedImages.value = []
+}
 </script>
 
 <template>
@@ -128,49 +236,78 @@ const scrollToResults = () => {
     <div class="mouse-glow"></div>
 
     <div class="content-container">
-      <header class="app-header">
-        <!-- 删除主题切换按钮 -->
-      </header>
+      <!-- 根据当前页面显示不同内容 -->
+      <template v-if="currentPage === 'login'">
+        <login-page
+          :isDarkMode="isDarkMode"
+          @toggleTheme="toggleTheme"
+          @login="handleLogin"
+          @register="goToRegister" />
+      </template>
 
-      <main class="app-main">
-        <transition name="fade">
-          <el-alert
-            v-if="errorMessage"
-            :title="errorMessage"
-            type="error"
-            show-icon
-            class="error-alert"
-            @close="errorMessage = ''" />
-        </transition>
+      <template v-else-if="currentPage === 'register'">
+        <register-page
+          :isDarkMode="isDarkMode"
+          @toggleTheme="toggleTheme"
+          @register-success="handleRegisterSuccess"
+          @login="goToLogin" />
+      </template>
 
-        <div class="app-sections">
-          <div class="generator-section">
-            <image-generator
-              @images-generated="handleImagesGenerated"
-              @error="handleError"
-              :isDarkMode="isDarkMode"
-              @toggleTheme="toggleTheme" />
+      <template v-else-if="currentPage === 'main' && isLoggedIn">
+        <header class="app-header">
+          <div class="user-info">
+            <span class="welcome-text">欢迎, {{ userInfo?.username }}</span>
+            <el-button size="small" @click="handleLogout" class="logout-btn"
+              >退出登录</el-button
+            >
           </div>
+        </header>
 
-          <div class="results-section" v-if="generatedImages.length">
-            <result-display :images="generatedImages" />
+        <main class="app-main">
+          <transition name="fade">
+            <el-alert
+              v-if="errorMessage"
+              :title="errorMessage"
+              type="error"
+              show-icon
+              class="error-alert"
+              @close="errorMessage = ''" />
+          </transition>
+
+          <div class="app-sections">
+            <div class="generator-section">
+              <image-generator
+                @images-generated="handleImagesGenerated"
+                @error="handleError"
+                :isDarkMode="isDarkMode"
+                @toggleTheme="toggleTheme" />
+            </div>
+
+            <transition name="fade">
+              <div class="results-section" v-if="generatedImages.length">
+                <result-display
+                  :images="generatedImages"
+                  :imageSize="generatedImages.imageSize"
+                  @close="clearGeneratedImages" />
+              </div>
+            </transition>
           </div>
-        </div>
-      </main>
+        </main>
 
-      <footer class="app-footer">
-        <p>
-          <a
-            href="https://beian.miit.gov.cn/#/Integrated/recordQuery"
-            target="_blank"
-            class="beian-link"
-            >滇ICP备2025050068号-1</a
-          >
-        </p>
-        <!-- <p class="footer-powered">
-          基于 <span class="highlight">SiliconFlow API</span> 提供技术支持
-        </p> -->
-      </footer>
+        <footer class="app-footer">
+          <p>
+            <a
+              href="https://beian.miit.gov.cn/#/Integrated/recordQuery"
+              target="_blank"
+              class="beian-link"
+              >滇ICP备2025050068号-1</a
+            >
+          </p>
+          <!-- <p class="footer-powered">
+            基于 <span class="highlight">SiliconFlow API</span> 提供技术支持
+          </p> -->
+        </footer>
+      </template>
     </div>
   </div>
 </template>
@@ -215,6 +352,7 @@ const scrollToResults = () => {
   /* 滑块轨道颜色 - 深色模式 */
   --slider-track-bg: #44475a;
   --slider-track-bg-hover: #555970;
+  --border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* 亮色模式变量 - 手动设置时使用 */
@@ -351,6 +489,9 @@ body {
   margin: 0 auto;
   padding: 20px;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 .app-container {
@@ -363,74 +504,9 @@ body {
   align-items: center;
 }
 
-.tech-background {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    135deg,
-    var(--background-dark) 0%,
-    color-mix(in srgb, var(--background-dark) 80%, var(--primary-color) 20%)
-      100%
-  );
-  z-index: -3;
-}
-
-.tech-grid {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image:
-    linear-gradient(
-      rgba(var(--text-color, 26, 32, 66), 0.05) 1px,
-      transparent 1px
-    ),
-    linear-gradient(
-      90deg,
-      rgba(var(--text-color, 26, 32, 66), 0.05) 1px,
-      transparent 1px
-    );
-  background-size: 40px 40px;
-  z-index: -2;
-}
-
-.tech-circles {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background:
-    radial-gradient(
-      circle at 15% 10%,
-      rgba(var(--primary-color, 83, 82, 237), 0.12) 0%,
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 85% 30%,
-      rgba(var(--accent-color, 0, 201, 255), 0.12) 0%,
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 10% 60%,
-      rgba(var(--accent-color, 0, 201, 255), 0.07) 0%,
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 90% 90%,
-      rgba(var(--primary-color, 83, 82, 237), 0.12) 0%,
-      transparent 30%
-    );
-  z-index: -1;
-}
-
 .app-header {
   position: relative;
-  padding-top: 30px;
+  padding-top: 20px;
   margin-bottom: 30px;
   display: flex;
   flex-direction: column;
@@ -440,41 +516,30 @@ body {
   z-index: 1;
 }
 
-.logo-container {
-  margin: 0 auto 20px;
-  width: 70px;
-  height: 70px;
-  border-radius: 20px;
+.user-info {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: linear-gradient(
-    135deg,
-    var(--secondary-color),
-    var(--primary-color)
-  );
-  box-shadow: 0 10px 20px rgba(83, 82, 237, 0.3);
+  justify-content: flex-end;
+  width: 100%;
+  padding: 0 10px;
+  gap: 15px;
 }
 
-.logo-icon {
-  font-size: 28px;
-  font-weight: 700;
-  color: white;
-  letter-spacing: 0px;
+.welcome-text {
+  color: var(--text-color);
+  font-weight: 500;
 }
 
-.app-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 10px;
-  background: linear-gradient(
-    to right,
-    var(--secondary-color),
-    var(--accent-color)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: 1px;
+.logout-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: rgba(255, 100, 100, 0.15);
+  color: #ff6b6b;
 }
 
 .app-subtitle {
@@ -486,7 +551,7 @@ body {
 
 .app-main {
   flex: 1;
-  margin-bottom: 40px;
+  margin-bottom: 80px;
   width: 100%;
 }
 
@@ -504,15 +569,19 @@ body {
 
 .app-footer {
   text-align: center;
-  padding: 20px 0;
+  padding: 15px 0;
   color: var(--text-secondary);
   font-size: 0.9rem;
-  margin-top: auto;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  background-color: var(--background-dark);
+  z-index: 10;
   /* background-color: rgba(0, 0, 0, 0.2); */
 }
 
@@ -544,18 +613,10 @@ body {
     margin-bottom: 20px;
   }
 
-  .logo-container {
-    width: 60px;
-    height: 60px;
-    margin-bottom: 15px;
-  }
-
-  .logo-icon {
-    font-size: 24px;
-  }
-
-  .app-header h1 {
-    font-size: 1.8rem;
+  .user-info {
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
   }
 
   .app-subtitle {
@@ -571,11 +632,11 @@ body {
   }
 
   .app-main {
-    margin-bottom: 20px;
+    margin-bottom: 60px;
   }
 
   .app-footer {
-    padding: 15px 0;
+    padding: 10px 0;
   }
 }
 
@@ -620,34 +681,6 @@ body {
 
 .beian-link:hover {
   color: var(--accent-color);
-}
-
-/* 亮色主题变量 */
-:root[data-theme='light'] {
-  --primary-color: #1976d2;
-  --secondary-color: #2196f3;
-  --accent-color: #42a5f5;
-  --background-dark: #ffffff;
-  --card-bg: rgba(255, 255, 255, 0.85);
-  --text-color: #2c3e50;
-  --text-secondary: rgba(44, 62, 80, 0.7);
-  --border-color: rgba(0, 0, 0, 0.08);
-  --slider-track-bg: rgba(0, 0, 0, 0.08);
-  --slider-track-bg-hover: rgba(0, 0, 0, 0.12);
-}
-
-/* 暗色主题变量 */
-:root[data-theme='dark'] {
-  --primary-color: #5352ed;
-  --secondary-color: #3498db;
-  --accent-color: #00c9ff;
-  --background-dark: #10101e;
-  --card-bg: rgba(255, 255, 255, 0.07);
-  --text-color: rgba(255, 255, 255, 0.95);
-  --text-secondary: rgba(255, 255, 255, 0.7);
-  --border-color: rgba(255, 255, 255, 0.1);
-  --slider-track-bg: rgba(255, 255, 255, 0.1);
-  --slider-track-bg-hover: rgba(255, 255, 255, 0.15);
 }
 
 /* 优化卡片玻璃态效果 */

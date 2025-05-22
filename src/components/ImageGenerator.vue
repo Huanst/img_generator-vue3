@@ -2,25 +2,6 @@
   <glassmorphic-card variant="primary" :showGlow="true">
     <div class="generator-header">
       <h2 class="generator-title">文字生成图像</h2>
-      <!-- 注释掉上传图片功能
-      <div class="header-actions">
-        <el-tooltip content="上传参考图片 (将转换为WebP格式)" placement="top">
-          <div
-            class="tech-icon-container upload-icon"
-            @click="triggerFileUpload"
-            :class="{ 'is-loading': isUploading }">
-            <el-icon v-if="!isUploading" class="tech-icon"><Upload /></el-icon>
-            <el-icon v-else class="tech-icon is-loading"><Loading /></el-icon>
-            <input
-              type="file"
-              ref="fileInput"
-              accept="image/*"
-              style="display: none"
-              @change="handleFileUpload" />
-          </div>
-        </el-tooltip>
-      </div>
-      -->
 
       <!-- 添加主题切换按钮到右上角 -->
       <div class="theme-toggle">
@@ -34,23 +15,6 @@
         </button>
       </div>
     </div>
-
-    <!-- 注释掉上传图片预览
-    <div v-if="uploadedImage" class="uploaded-image-preview">
-      <div class="preview-header">
-        <span>参考图片 <small>(已转换为WebP格式)</small></span>
-        <el-button link @click="removeUploadedImage" class="remove-btn">
-          <el-icon><Close /></el-icon>
-        </el-button>
-      </div>
-      <div class="image-preview-container">
-        <img :src="uploadedImage" alt="上传的图片" class="preview-image" />
-        <div class="image-info">
-          图片已转换为WebP格式的base64编码，符合API要求
-        </div>
-      </div>
-    </div>
-    -->
 
     <el-form label-position="top">
       <el-form-item>
@@ -95,7 +59,7 @@
               <el-input-number
                 v-model="width"
                 :min="256"
-                :max="1024"
+                :max="1280"
                 :step="64"
                 :disabled="loading"
                 @change="updateSelectedSize"
@@ -104,7 +68,7 @@
               <el-input-number
                 v-model="height"
                 :min="256"
-                :max="1024"
+                :max="1280"
                 :step="64"
                 :disabled="loading"
                 @change="updateSelectedSize"
@@ -219,11 +183,8 @@
 import { ref, onUnmounted, watch } from 'vue'
 import {
   MagicStick,
-  // Upload,  // 注释掉未使用的图标
-  // Loading,
   InfoFilled,
   ArrowDown,
-  // Close,
   Expand,
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
@@ -241,8 +202,8 @@ const props = defineProps({
 const loading = ref(false)
 const showAdditionalOptions = ref(false)
 const prompt = ref('')
-const width = ref(1024)
-const height = ref(1024)
+const width = ref(1280)
+const height = ref(1280)
 const negativePrompt = ref('')
 const guidanceScale = ref(7)
 const steps = ref(30)
@@ -260,15 +221,17 @@ onUnmounted(() => {
 
 // 预设的分辨率选项
 const sizeOptions = [
+  { value: '1280x1280', label: '1280×1280', width: 1280, height: 1280 },
   { value: '1024x1024', label: '1024×1024', width: 1024, height: 1024 },
   { value: '960x1280', label: '960×1280', width: 960, height: 1280 },
+  { value: '1280x960', label: '1280×960', width: 1280, height: 960 },
   { value: '768x1024', label: '768×1024', width: 768, height: 1024 },
   { value: '720x1440', label: '720×1440', width: 720, height: 1440 },
   { value: '720x1280', label: '720×1280', width: 720, height: 1280 },
   { value: 'custom', label: '自定义尺寸' },
 ]
 
-const selectedSize = ref('1024x1024')
+const selectedSize = ref('1280x1280')
 
 // 设置预设分辨率
 const setPresetSize = value => {
@@ -286,13 +249,6 @@ const updateSelectedSize = () => {
   )
   selectedSize.value = matchedOption ? matchedOption.value : 'custom'
 }
-
-// 注释掉上传图片相关的变量和函数
-/*
-const uploadedImage = ref(null)
-const fileInput = ref(null)
-const isUploading = ref(false)
-*/
 
 const emit = defineEmits(['imagesGenerated', 'error', 'toggleTheme'])
 
@@ -333,34 +289,6 @@ const generateImage = async () => {
       image_size: `${width.value}x${height.value}`,
       model: 'Kwai-Kolors/Kolors',
     }
-
-    // 如果有上传的参考图片，添加到请求中
-    /*
-    if (uploadedImage.value) {
-      // 检查base64格式
-      let imageData = uploadedImage.value
-
-      // 确保图片格式符合API要求
-      // 移除base64数据中的空格，因为API可能不接受带空格的格式
-      if (imageData.includes('data:image/webp;base64, ')) {
-        imageData = imageData.replace(
-          'data:image/webp;base64, ',
-          'data:image/webp;base64,'
-        )
-      }
-
-      // 恢复 base64 估算大小检查
-      const base64Data = imageData.split(',')[1]
-      const approximateSize = (base64Data.length * 3) / 4 // bytes
-      if (approximateSize > 10 * 1024 * 1024) {
-        // 10MB
-        throw new Error('参考图片太大 (超过约10MB)，请上传较小的图片')
-      }
-
-      // 添加到请求参数中
-      requestParams.image = imageData
-    }
-    */
 
     // 添加可选参数
     if (showAdditionalOptions.value) {
@@ -474,105 +402,6 @@ const generateImage = async () => {
 const handleGenerate = () => {
   generateImage()
 }
-
-// 注释掉上传图片相关的函数
-/*
-const triggerFileUpload = () => {
-  fileInput.value.click()
-}
-
-const handleFileUpload = event => {
-  const file = event.target.files[0]
-  if (file) {
-    isUploading.value = true
-
-    // 如果存在之前的清理函数，先调用它
-    if (typeof cleanupFunction === 'function') {
-      cleanupFunction()
-    }
-
-    // 使用Canvas将图片转换为webp格式
-    const img = new Image()
-    const reader = new FileReader()
-
-    // 添加组件卸载标志
-    let isComponentMounted = true
-
-    // 组件卸载前清理
-    cleanupFunction = () => {
-      isComponentMounted = false
-      URL.revokeObjectURL(img.src) // 释放资源
-    }
-
-    reader.onload = function (e) {
-      if (!isComponentMounted) return // 如果组件已卸载，不继续处理
-      img.src = e.target.result
-
-      img.onload = function () {
-        if (!isComponentMounted) return // 如果组件已卸载，不继续处理
-
-        // 创建Canvas
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
-
-        // 在Canvas上绘制图片
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0)
-
-        // 将Canvas内容转换为png格式
-        try {
-          const pngData = canvas.toDataURL('image/png')
-
-          // 格式为 "data:image/png;base64,XXX"
-          const formattedData = pngData
-
-          // 设置上传的图片
-          if (isComponentMounted) {
-            // 确保组件仍然挂载
-            uploadedImage.value = formattedData
-            isUploading.value = false
-            console.log(
-              '图片转换成功 (PNG)，格式:',
-              formattedData.substring(0, 40) + '...'
-            )
-          }
-        } catch (error) {
-          console.error('图片转换失败:', error)
-          if (isComponentMounted) {
-            // 确保组件仍然挂载
-            emit('error', { message: '图片转换失败，请尝试其他图片' })
-            isUploading.value = false
-          }
-        }
-      }
-
-      img.onerror = function () {
-        if (!isComponentMounted) return // 如果组件已卸载，不继续处理
-        console.error('图片加载失败')
-        emit('error', { message: '图片加载失败，请尝试其他图片' })
-        isUploading.value = false
-      }
-    }
-
-    reader.onerror = () => {
-      if (!isComponentMounted) return // 如果组件已卸载，不继续处理
-      console.error('图片文件读取失败')
-      emit('error', { message: '图片读取失败，请重试' })
-      isUploading.value = false
-    }
-
-    reader.readAsDataURL(file)
-
-    // 返回清理函数
-    return cleanupFunction
-  }
-}
-
-const removeUploadedImage = () => {
-  uploadedImage.value = null
-}
-*/
 
 // 监听分辨率选择变化
 watch(selectedSize, newVal => {

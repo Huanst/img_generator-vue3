@@ -4,15 +4,30 @@
     <glassmorphic-card variant="primary">
       <div class="result-header">
         <h3 class="result-title">生成结果</h3>
-        <el-button
-          size="small"
-          class="download-all-btn"
-          :disabled="downloadingAll"
-          @click="downloadAllImages">
-          <el-icon v-if="!downloadingAll"><Download /></el-icon>
-          <el-icon v-else class="is-loading"><Loading /></el-icon>
-          <span>{{ downloadingAll ? '打开中...' : '下载全部' }}</span>
-        </el-button>
+        <div class="header-actions">
+          <el-button
+            size="small"
+            class="download-all-btn"
+            :disabled="downloadingAll"
+            @click="downloadAllImages">
+            <el-icon v-if="!downloadingAll"><Download /></el-icon>
+            <el-icon v-else class="is-loading"><Loading /></el-icon>
+            <span>{{
+              downloadingAll
+                ? '打开中...'
+                : images.length === 1
+                  ? '下载'
+                  : '下载全部'
+            }}</span>
+          </el-button>
+          <el-button
+            class="close-btn"
+            circle
+            size="small"
+            @click="closeResultPanel">
+            <el-icon><Close /></el-icon>
+          </el-button>
+        </div>
       </div>
 
       <div class="result-stats">
@@ -25,7 +40,10 @@
           <div class="stat-label">尺寸</div>
         </div>
         <div class="stat-item" v-if="createdTime">
-          <div class="stat-value">{{ createdTime }}</div>
+          <div class="stat-value time-value">
+            <div class="date-value">{{ createdTime.date }}</div>
+            <div class="time-value">{{ createdTime.time }}</div>
+          </div>
           <div class="stat-label">生成时间</div>
         </div>
       </div>
@@ -59,7 +77,7 @@
           </el-image>
 
           <div class="image-actions">
-            <el-tooltip content="下载" placement="top">
+            <el-tooltip content="下载图片" placement="top">
               <el-button
                 class="action-btn"
                 :loading="downloadingIndex === index"
@@ -93,6 +111,7 @@ import {
   Link,
   InfoFilled,
   PictureFilled,
+  Close,
 } from '@element-plus/icons-vue'
 import { ElNotification } from 'element-plus'
 import GlassmorphicCard from './GlassmorphicCard.vue'
@@ -104,14 +123,17 @@ const props = defineProps({
   },
   imageSize: {
     type: String,
-    default: ''
-  }
+    default: '',
+  },
 })
 
 const downloadingIndex = ref(-1)
 const downloadingAll = ref(false)
 const loadingErrors = ref({}) // 记录图片加载错误状态
 const isMounted = ref(true) // 跟踪组件是否挂载
+
+// 添加emit定义
+const emit = defineEmits(['close'])
 
 // 组件卸载时设置状态
 onUnmounted(() => {
@@ -164,11 +186,18 @@ onMounted(() => {
 })
 
 const createdTime = computed(() => {
-  return new Date().toLocaleTimeString('zh-CN', {
+  const now = new Date()
+  const date = now.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const time = now.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit'
+    second: '2-digit',
   })
+  return { date, time }
 })
 
 const getImageSize = () => {
@@ -176,6 +205,16 @@ const getImageSize = () => {
   if (props.imageSize) {
     return props.imageSize
   }
+
+  // 尝试从图片获取尺寸
+  if (props.images && props.images.length > 0) {
+    const img = new Image()
+    img.src = props.images[0].url
+    if (img.width && img.height) {
+      return `${img.width}×${img.height}`
+    }
+  }
+
   return '未知'
 }
 
@@ -299,7 +338,10 @@ const downloadAllImages = async () => {
     if (openedCount === 0) {
       ElNotification({
         title: '打开失败',
-        message: '所有图片打开失败，请检查浏览器是否阻止了弹窗',
+        message:
+          props.images.length === 1
+            ? '图片打开失败，请检查浏览器是否阻止了弹窗'
+            : '所有图片打开失败，请检查浏览器是否阻止了弹窗',
         type: 'error',
         duration: 4000,
         showClose: true,
@@ -314,8 +356,11 @@ const downloadAllImages = async () => {
       })
     } else {
       ElNotification({
-        title: '所有图片已打开',
-        message: `已打开 ${openedCount} 张图片，请在新标签页右键保存`,
+        title: props.images.length === 1 ? '图片已打开' : '所有图片已打开',
+        message:
+          props.images.length === 1
+            ? '图片已在新标签页打开，请右键保存'
+            : `已打开 ${openedCount} 张图片，请在新标签页右键保存`,
         type: 'success',
         duration: 3000,
         showClose: true,
@@ -433,6 +478,12 @@ const handleImageClick = () => {
   // 可以在这里添加点击图片时的额外处理逻辑
   console.log('图片被点击')
 }
+
+// 关闭结果面板
+const closeResultPanel = () => {
+  console.log('关闭结果面板')
+  emit('close')
+}
 </script>
 
 <style scoped>
@@ -471,6 +522,12 @@ const handleImageClick = () => {
   font-size: 1.4rem;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .download-all-btn {
   display: flex;
   align-items: center;
@@ -496,24 +553,48 @@ const handleImageClick = () => {
   background: var(--card-bg, rgba(0, 0, 0, 0.2));
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: flex-end;
 }
 
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex: 1;
 }
 
 .stat-value {
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--text-color, white);
+  min-height: 40px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
 }
 
 .stat-label {
   font-size: 0.8rem;
   color: var(--text-secondary, rgba(255, 255, 255, 0.6));
   margin-top: 4px;
+}
+
+.stat-value.time-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+  min-height: 40px;
+  justify-content: flex-end;
+}
+
+.date-value {
+  font-size: 0.9rem;
+  margin-bottom: 2px;
+}
+
+.time-value {
+  font-size: 1rem;
 }
 
 .image-grid {
@@ -688,6 +769,7 @@ const handleImageClick = () => {
     padding: 8px;
     gap: 12px;
     margin-bottom: 12px;
+    align-items: flex-end;
   }
 
   .stat-item {
@@ -696,6 +778,7 @@ const handleImageClick = () => {
 
   .stat-value {
     font-size: 1rem;
+    min-height: 32px;
   }
 
   .stat-label {
@@ -732,6 +815,16 @@ const handleImageClick = () => {
     font-size: 0.8rem;
     margin-top: 12px;
     padding: 0 8px;
+  }
+
+  .close-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .header-actions {
+    gap: 6px;
   }
 }
 
@@ -829,5 +922,21 @@ const handleImageClick = () => {
 :root[data-theme='light'] .image-error {
   background: rgba(0, 0, 0, 0.05);
   color: var(--text-secondary);
+}
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg, rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-secondary);
+  transition: all 0.3s;
+}
+
+.close-btn:hover {
+  background: rgba(255, 0, 0, 0.15);
+  color: var(--text-color);
+  transform: rotate(90deg);
 }
 </style>
