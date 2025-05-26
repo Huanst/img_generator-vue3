@@ -69,11 +69,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { User, Lock, Key } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/urlUtils'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -115,9 +116,6 @@ const handleToggleTheme = () => {
   emit('toggleTheme')
 }
 
-// API基础URL
-const API_BASE_URL = 'http://localhost:5001/api'
-
 // 处理登录逻辑
 const handleLogin = () => {
   if (!loginFormRef.value) return
@@ -134,6 +132,7 @@ const handleLogin = () => {
         })
         .then(response => {
           loading.value = false
+          console.log('登录响应:', response.data)
 
           if (response.data.status === 'success') {
             // 登录成功
@@ -170,16 +169,23 @@ const handleLogin = () => {
         })
         .catch(error => {
           loading.value = false
+          console.error('登录请求错误:', error)
 
           // 处理错误
           let errorMessage = '登录失败，请重试'
 
           if (error.response) {
             // 服务器响应了错误状态码
+            console.error('错误状态码:', error.response.status)
+            console.error('错误响应数据:', error.response.data)
             errorMessage = error.response.data.message || errorMessage
           } else if (error.request) {
             // 请求已发送但没有收到响应
+            console.error('请求已发送但没有收到响应:', error.request)
             errorMessage = '无法连接到服务器，请检查网络连接'
+          } else {
+            // 设置请求时发生错误
+            console.error('请求错误:', error.message)
           }
 
           ElMessage({
@@ -373,6 +379,21 @@ const goToRegister = () => {
 
 .theme-icon.is-dark {
   transform: rotate(-15deg);
+}
+
+/* 头像容器样式 */
+.avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  animation: fadeIn 0.4s ease;
+}
+
+.username-display {
+  margin-top: 10px;
+  color: var(--text-color);
+  font-weight: 500;
 }
 
 /* 移动端适配 */

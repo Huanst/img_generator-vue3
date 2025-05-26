@@ -173,9 +173,6 @@
         </el-button>
       </div>
     </el-form>
-    <ResultDisplay
-      :images="generatedImages"
-      :imageSize="`${width}×${height}`" />
   </glassmorphic-card>
 </template>
 
@@ -189,7 +186,6 @@ import {
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import axios from 'axios'
-import ResultDisplay from './ResultDisplay.vue'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({

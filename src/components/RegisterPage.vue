@@ -22,6 +22,25 @@
           :rules="rules"
           ref="registerFormRef"
           label-position="top">
+          <el-form-item label="头像 (可选)" prop="avatar">
+            <el-upload
+              class="avatar-uploader"
+              action="#"
+              :show-file-list="false"
+              :auto-upload="false"
+              :on-change="handleAvatarChange"
+              accept="image/*">
+              <img
+                v-if="avatarPreviewUrl"
+                :src="avatarPreviewUrl"
+                class="avatar-preview" />
+              <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+              <div class="el-upload__tip">
+                点击上传头像，仅支持图片格式，大小不超过5MB
+              </div>
+            </el-upload>
+          </el-form-item>
+
           <el-form-item prop="username" label="用户名">
             <el-input
               v-model="registerForm.username"
@@ -81,10 +100,11 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { User, Lock, Message, UserFilled } from '@element-plus/icons-vue'
+import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import { API_BASE_URL } from '../utils/urlUtils'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -108,7 +128,31 @@ const registerForm = reactive({
   email: '',
   password: '',
   confirmPassword: '',
+  avatarFile: null,
 })
+
+// 头像预览
+const avatarPreviewUrl = ref('')
+
+// 处理头像选择
+const handleAvatarChange = uploadFile => {
+  if (uploadFile.raw) {
+    // 检查文件大小和类型 (虽然后端也有验证，前端可以先做一层)
+    const isLt5M = uploadFile.size / 1024 / 1024 < 5
+    const isImage = uploadFile.raw.type.startsWith('image/')
+
+    if (!isImage) {
+      ElMessage.error('请上传图片格式的文件!')
+      return false
+    }
+    if (!isLt5M) {
+      ElMessage.error('上传头像图片大小不能超过 5MB!')
+      return false
+    }
+    registerForm.avatarFile = uploadFile.raw
+    avatarPreviewUrl.value = URL.createObjectURL(uploadFile.raw)
+  }
+}
 
 // 密码确认验证器
 const validateConfirmPassword = (rule, value, callback) => {
@@ -154,9 +198,6 @@ const handleToggleTheme = () => {
   emit('toggleTheme')
 }
 
-// API基础URL
-const API_BASE_URL = 'http://localhost:5001/api'
-
 // 处理注册逻辑
 const handleRegister = () => {
   if (!registerFormRef.value) return
@@ -165,68 +206,60 @@ const handleRegister = () => {
     if (valid) {
       loading.value = true
 
-      // 发送注册请求到后端API
+      const formData = new FormData()
+      formData.append('username', registerForm.username)
+      formData.append('email', registerForm.email)
+      formData.append('password', registerForm.password)
+      if (registerForm.avatarFile) {
+        formData.append('avatar', registerForm.avatarFile)
+      }
+
       axios
-        .post(`${API_BASE_URL}/auth/register`, {
-          username: registerForm.username,
-          email: registerForm.email,
-          password: registerForm.password,
-        })
+        .post(`${API_BASE_URL}/auth/register`, formData)
         .then(response => {
           loading.value = false
-
           if (response.data.status === 'success') {
-            // 注册成功
-            ElMessage({
-              type: 'success',
-              message: response.data.message || '注册成功，请登录',
-            })
-
-            // 触发注册成功事件
+            ElMessage.success(response.data.message || '注册成功，请登录')
             emit('register-success', {
               username: registerForm.username,
               email: registerForm.email,
+              avatarUrl: response.data.data.avatarUrl,
             })
-
-            // 自动跳转到登录页面
             setTimeout(() => {
               goToLogin()
             }, 1500)
           } else {
-            // 注册失败（这种情况不应该发生，因为成功应该是status=success）
-            ElMessage({
-              type: 'error',
-              message: response.data.message || '注册失败，请重试',
-            })
+            ElMessage.error(response.data.message || '注册失败，请重试')
           }
         })
         .catch(error => {
           loading.value = false
-
-          // 处理错误
           let errorMessage = '注册失败，请重试'
-
           if (error.response) {
-            // 服务器响应了错误状态码
             errorMessage = error.response.data.message || errorMessage
-
-            // 特殊处理常见注册错误
             if (error.response.status === 409) {
               if (error.response.data.message.includes('用户名已存在')) {
                 errorMessage = '用户名已被使用，请更换用户名'
               } else if (error.response.data.message.includes('邮箱已被注册')) {
                 errorMessage = '邮箱已被注册，请使用其他邮箱'
               }
+            } else if (
+              error.response.status === 400 &&
+              error.response.data.message.includes('只允许上传图片文件')
+            ) {
+              errorMessage = '头像只允许上传图片文件!'
+            } else if (
+              error.response.status === 400 &&
+              error.response.data.message.includes('File too large')
+            ) {
+              errorMessage = '上传头像图片大小不能超过 5MB!'
             }
           } else if (error.request) {
-            // 请求已发送但没有收到响应
             errorMessage = '无法连接到服务器，请检查网络连接'
+          } else {
+            errorMessage = error.message || errorMessage
           }
-
-          ElMessage({
-            type: 'error',
-            message: errorMessage,
-          })
+          ElMessage.error(errorMessage)
         })
     }
   })
@@ -424,5 +457,52 @@ const goToLogin = () => {
   .theme-icon {
     font-size: 18px;
   }
+}
+
+/* 头像上传样式 */
+.avatar-uploader .el-upload {
+  border: 1px dashed var(--border-color, #d9d9d9);
+  border-radius: 50%; /* 圆形 */
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  width: 100px; /* 固定大小 */
+  height: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 10px; /* 居中并添加底部边距 */
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: var(--primary-color);
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: var(--text-secondary, #8c939d);
+  width: 100px;
+  height: 100px;
+  line-height: 100px;
+  text-align: center;
+}
+
+.avatar-preview {
+  width: 100px;
+  height: 100px;
+  object-fit: cover; /* 保持图片比例并填充 */
+  border-radius: 50%; /* 确保预览也是圆形的 */
+}
+
+.el-upload__tip {
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 5px;
+}
+
+/* 调整el-form-item的间距 */
+.el-form-item {
+  margin-bottom: 20px;
 }
 </style>

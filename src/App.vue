@@ -5,16 +5,14 @@ import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import axios from 'axios'
+import { API_BASE_URL } from './utils/urlUtils'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
 const isLoggedIn = ref(false) // 用户登录状态
-const currentPage = ref('login') // 当前页面: login, register, main
+const currentPage = ref('login') // 当前页面: login, register, main, debug
 const userInfo = ref(null) // 用户信息
-
-// API基础URL
-const API_BASE_URL = 'http://localhost:5001/api'
 
 // 检测系统主题偏好
 const detectSystemTheme = () => {
@@ -580,7 +578,7 @@ body {
   position: fixed;
   bottom: 0;
   left: 0;
-  background-color: var(--background-dark);
+  background-color: transparent;
   z-index: 10;
   /* background-color: rgba(0, 0, 0, 0.2); */
 }
@@ -677,10 +675,26 @@ body {
   transition: color 0.3s;
   display: inline-block;
   padding: 5px 0;
+  background: transparent !important;
 }
 
 .beian-link:hover {
   color: var(--accent-color);
+}
+
+/* 调试按钮样式 */
+.debug-container {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.debug-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
 /* 优化卡片玻璃态效果 */
