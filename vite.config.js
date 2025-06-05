@@ -8,12 +8,11 @@ export default defineConfig({
     host: '0.0.0.0', // 允许局域网访问
     port: 5174, // 端口号
     proxy: {
+      // 将本地 /api 请求代理到 huanst.cn/api
       '/api': {
-        target: 'https://huanst.cn', // 使用HTTPS避免混合内容问题
+        target: 'https://huanst.cn', // 使用固定的后端地址
         changeOrigin: true,
-        secure: true, // 因为目标是https，所以设置为true
-        // 如果 API 需要保留 /api 前缀，则不需要重写路径
-        // rewrite: (path) => path.replace(/^\/api/, '')
+        secure: true,
       },
     },
   },

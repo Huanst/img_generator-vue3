@@ -4,8 +4,8 @@ import { ElMessage } from 'element-plus'
 
 // 创建axios实例
 const apiClient = axios.create({
-  // 在生产环境中使用相对路径，避免跨域问题
-  baseURL: import.meta.env.DEV ? API_BASE_URL : '/api',
+  // 统一使用固定的API地址
+  baseURL: API_BASE_URL,
   timeout: 15000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json',
