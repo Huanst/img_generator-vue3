@@ -21,7 +21,8 @@
           :model="registerForm"
           :rules="rules"
           ref="registerFormRef"
-          label-position="top">
+          label-position="top"
+          @submit.prevent="handleRegister">
           <el-form-item label="头像 (可选)" prop="avatar">
             <el-upload
               class="avatar-uploader"
@@ -29,14 +30,15 @@
               :show-file-list="false"
               :auto-upload="false"
               :on-change="handleAvatarChange"
-              accept="image/*">
+              :before-upload="beforeAvatarUpload"
+              accept="image/jpeg,image/png,image/gif,image/webp">
               <img
                 v-if="avatarPreviewUrl"
                 :src="avatarPreviewUrl"
                 class="avatar-preview" />
               <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
               <div class="el-upload__tip">
-                点击上传头像，仅支持图片格式，大小不超过5MB
+                点击上传头像，支持 jpg/png/gif/webp 格式，大小不超过5MB
               </div>
             </el-upload>
           </el-form-item>
@@ -44,14 +46,14 @@
           <el-form-item prop="username" label="用户名">
             <el-input
               v-model="registerForm.username"
-              placeholder="请输入用户名"
+              placeholder="请输入用户名 (3-20个字符)"
               prefix-icon="User" />
           </el-form-item>
 
           <el-form-item prop="email" label="邮箱">
             <el-input
               v-model="registerForm.email"
-              placeholder="请输入邮箱"
+              placeholder="请输入有效的邮箱地址"
               prefix-icon="Message" />
           </el-form-item>
 
@@ -59,7 +61,7 @@
             <el-input
               v-model="registerForm.password"
               type="password"
-              placeholder="请输入密码"
+              placeholder="请输入密码 (6-20个字符)"
               prefix-icon="Lock"
               show-password />
           </el-form-item>
@@ -99,12 +101,11 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
-import { API_BASE_URL } from '../utils/urlUtils'
+import apiClient from '../utils/apiClient'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -134,23 +135,38 @@ const registerForm = reactive({
 // 头像预览
 const avatarPreviewUrl = ref('')
 
+// 处理头像选择前的验证
+const beforeAvatarUpload = file => {
+  // 检查文件类型
+  const isValidType = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'image/webp',
+  ].includes(file.type)
+  if (!isValidType) {
+    ElMessage.error('头像只能是 JPG/PNG/GIF/WEBP 格式!')
+    return false
+  }
+
+  // 检查文件大小
+  const isLt5M = file.size / 1024 / 1024 < 5
+  if (!isLt5M) {
+    ElMessage.error('头像大小不能超过 5MB!')
+    return false
+  }
+
+  return true
+}
+
 // 处理头像选择
 const handleAvatarChange = uploadFile => {
   if (uploadFile.raw) {
-    // 检查文件大小和类型 (虽然后端也有验证，前端可以先做一层)
-    const isLt5M = uploadFile.size / 1024 / 1024 < 5
-    const isImage = uploadFile.raw.type.startsWith('image/')
-
-    if (!isImage) {
-      ElMessage.error('请上传图片格式的文件!')
-      return false
+    // 检查文件大小和类型
+    if (beforeAvatarUpload(uploadFile.raw)) {
+      registerForm.avatarFile = uploadFile.raw
+      avatarPreviewUrl.value = URL.createObjectURL(uploadFile.raw)
     }
-    if (!isLt5M) {
-      ElMessage.error('上传头像图片大小不能超过 5MB!')
-      return false
-    }
-    registerForm.avatarFile = uploadFile.raw
-    avatarPreviewUrl.value = URL.createObjectURL(uploadFile.raw)
   }
 }
 
@@ -177,12 +193,22 @@ const validateEmail = (rule, value, callback) => {
   }
 }
 
+// 用户名验证器
+const validateUsername = (rule, value, callback) => {
+  if (value === '') {
+    callback(new Error('请输入用户名'))
+  } else if (value.length < 3 || value.length > 20) {
+    callback(new Error('用户名长度应为3-20个字符'))
+  } else if (!/^[a-zA-Z0-9_\u4e00-\u9fa5]+$/.test(value)) {
+    callback(new Error('用户名只能包含字母、数字、下划线和中文'))
+  } else {
+    callback()
+  }
+}
+
 // 表单验证规则
 const rules = {
-  username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度应为3-20个字符', trigger: 'blur' },
-  ],
+  username: [{ required: true, trigger: 'blur', validator: validateUsername }],
   email: [{ required: true, trigger: 'blur', validator: validateEmail }],
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
@@ -206,6 +232,7 @@ const handleRegister = () => {
     if (valid) {
       loading.value = true
 
+      // 创建表单数据对象
       const formData = new FormData()
       formData.append('username', registerForm.username)
       formData.append('email', registerForm.email)
@@ -214,52 +241,99 @@ const handleRegister = () => {
         formData.append('avatar', registerForm.avatarFile)
       }
 
-      axios
-        .post(`${API_BASE_URL}/auth/register`, formData)
+      // 发送注册请求
+      apiClient
+        .post('/auth/register', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        })
         .then(response => {
           loading.value = false
           if (response.data.status === 'success') {
-            ElMessage.success(response.data.message || '注册成功，请登录')
+            ElMessage({
+              type: 'success',
+              message: response.data.message || '注册成功，请登录',
+              duration: 2000,
+            })
+
+            // 发送注册成功事件
             emit('register-success', {
               username: registerForm.username,
               email: registerForm.email,
-              avatarUrl: response.data.data.avatarUrl,
+              avatarUrl: response.data.data?.avatarUrl || null,
             })
+
+            // 延迟跳转到登录页
             setTimeout(() => {
               goToLogin()
             }, 1500)
           } else {
-            ElMessage.error(response.data.message || '注册失败，请重试')
+            ElMessage({
+              type: 'error',
+              message: response.data.message || '注册失败，请重试',
+              duration: 3000,
+            })
           }
         })
         .catch(error => {
           loading.value = false
+          console.error('注册请求错误:', error)
+
           let errorMessage = '注册失败，请重试'
+
           if (error.response) {
-            errorMessage = error.response.data.message || errorMessage
-            if (error.response.status === 409) {
-              if (error.response.data.message.includes('用户名已存在')) {
-                errorMessage = '用户名已被使用，请更换用户名'
-              } else if (error.response.data.message.includes('邮箱已被注册')) {
-                errorMessage = '邮箱已被注册，请使用其他邮箱'
-              }
-            } else if (
-              error.response.status === 400 &&
-              error.response.data.message.includes('只允许上传图片文件')
-            ) {
-              errorMessage = '头像只允许上传图片文件!'
-            } else if (
-              error.response.status === 400 &&
-              error.response.data.message.includes('File too large')
-            ) {
-              errorMessage = '上传头像图片大小不能超过 5MB!'
+            // 服务器响应了错误状态码
+            console.error('错误状态码:', error.response.status)
+            console.error('错误响应数据:', error.response.data)
+
+            // 根据错误状态码和消息提供更具体的错误信息
+            switch (error.response.status) {
+              case 400:
+                errorMessage = '请求参数不正确，请检查表单信息'
+                break
+              case 409:
+                if (
+                  error.response.data.message &&
+                  error.response.data.message.includes('用户名已存在')
+                ) {
+                  errorMessage = '用户名已被使用，请更换用户名'
+                } else if (
+                  error.response.data.message &&
+                  error.response.data.message.includes('邮箱已被注册')
+                ) {
+                  errorMessage = '邮箱已被注册，请使用其他邮箱'
+                } else {
+                  errorMessage = '用户名或邮箱已被注册'
+                }
+                break
+              case 413:
+                errorMessage = '上传的文件太大'
+                break
+              case 415:
+                errorMessage = '不支持的文件类型'
+                break
+              case 500:
+                errorMessage = '服务器内部错误，请稍后再试'
+                break
+              default:
+                errorMessage = error.response.data.message || errorMessage
             }
           } else if (error.request) {
+            // 请求已发送但没有收到响应
+            console.error('请求已发送但没有收到响应:', error.request)
             errorMessage = '无法连接到服务器，请检查网络连接'
           } else {
-            errorMessage = error.message || errorMessage
+            // 设置请求时发生错误
+            console.error('请求错误:', error.message)
+            errorMessage = '请求发送失败，请稍后再试'
           }
-          ElMessage.error(errorMessage)
+
+          ElMessage({
+            type: 'error',
+            message: errorMessage,
+            duration: 4000,
+          })
         })
     }
   })
@@ -269,6 +343,15 @@ const handleRegister = () => {
 const goToLogin = () => {
   emit('login')
 }
+
+// 清理头像预览的 URL 对象
+onMounted(() => {
+  return () => {
+    if (avatarPreviewUrl.value) {
+      URL.revokeObjectURL(avatarPreviewUrl.value)
+    }
+  }
+})
 </script>
 
 <style scoped>
@@ -282,7 +365,7 @@ const goToLogin = () => {
 
 .register-card-wrapper {
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
   padding: 20px;
   animation: fadeIn 0.6s ease forwards;
 }
@@ -315,9 +398,62 @@ const goToLogin = () => {
   flex: 1;
 }
 
-.form-actions {
+.avatar-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.avatar-uploader .el-upload {
+  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.2));
+  border-radius: 12px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s;
+  width: 120px;
+  height: 120px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.avatar-uploader .el-upload:hover {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-color-rgb, 83, 82, 237), 0.1);
+}
+
+.avatar-uploader-icon {
+  font-size: 28px;
+  color: var(--text-secondary, #ccc);
+  width: 120px;
+  height: 120px;
+  line-height: 120px;
+  text-align: center;
+}
+
+.avatar-preview {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+}
+
+.el-upload__tip {
+  font-size: 12px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
   margin-top: 10px;
-  margin-bottom: 16px;
+  text-align: center;
+  width: 100%;
+  max-width: 280px;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
 }
 
 .register-btn {
@@ -369,42 +505,11 @@ const goToLogin = () => {
 }
 
 .login-link {
+  margin-top: 30px;
   text-align: center;
-  margin-top: 8px;
-  color: var(--text-secondary);
 }
 
-:deep(.el-form-item__label) {
-  color: var(--text-color);
-  font-weight: 500;
-  font-size: 14px;
-}
-
-:deep(.el-input__wrapper),
-:deep(.el-textarea__wrapper) {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
-  box-shadow: none !important;
-  transition: all 0.3s;
-}
-
-:deep(.el-input__wrapper:hover),
-:deep(.el-textarea__wrapper:hover) {
-  border-color: var(--secondary-color, rgba(255, 255, 255, 0.2)) !important;
-}
-
-:deep(.el-input__wrapper.is-focus),
-:deep(.el-textarea__wrapper.is-focus) {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 1px rgba(var(--primary-color), 0.2) !important;
-}
-
-:deep(.el-input__inner),
-:deep(.el-textarea__inner) {
-  color: var(--text-color) !important;
-  background: transparent !important;
-}
-
+/* 主题切换按钮样式 */
 .theme-toggle {
   position: absolute;
   top: 0;
@@ -439,70 +544,9 @@ const goToLogin = () => {
   transform: rotate(-15deg);
 }
 
-/* 移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .register-card-wrapper {
     padding: 10px;
   }
-
-  .register-title {
-    font-size: 1.5rem;
-  }
-
-  .theme-btn {
-    width: 36px;
-    height: 36px;
-  }
-
-  .theme-icon {
-    font-size: 18px;
-  }
-}
-
-/* 头像上传样式 */
-.avatar-uploader .el-upload {
-  border: 1px dashed var(--border-color, #d9d9d9);
-  border-radius: 50%; /* 圆形 */
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  width: 100px; /* 固定大小 */
-  height: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin: 0 auto 10px; /* 居中并添加底部边距 */
-}
-
-.avatar-uploader .el-upload:hover {
-  border-color: var(--primary-color);
-}
-
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: var(--text-secondary, #8c939d);
-  width: 100px;
-  height: 100px;
-  line-height: 100px;
-  text-align: center;
-}
-
-.avatar-preview {
-  width: 100px;
-  height: 100px;
-  object-fit: cover; /* 保持图片比例并填充 */
-  border-radius: 50%; /* 确保预览也是圆形的 */
-}
-
-.el-upload__tip {
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 0.85rem;
-  margin-top: 5px;
-}
-
-/* 调整el-form-item的间距 */
-.el-form-item {
-  margin-bottom: 20px;
 }
 </style>

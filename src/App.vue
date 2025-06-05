@@ -4,7 +4,7 @@ import ImageGenerator from './components/ImageGenerator.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
-import axios from 'axios'
+import apiClient from './utils/apiClient'
 import { API_BASE_URL } from './utils/urlUtils'
 
 const generatedImages = ref([])
@@ -88,7 +88,7 @@ const handleLogin = userData => {
   const token =
     localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
   if (token) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
   }
 }
 
@@ -121,7 +121,7 @@ const handleLogout = () => {
   sessionStorage.removeItem('user_info')
 
   // 清除Authorization头
-  delete axios.defaults.headers.common['Authorization']
+  delete apiClient.defaults.headers.common['Authorization']
 }
 
 // 检查本地存储的登录信息
@@ -135,7 +135,7 @@ const checkStoredLogin = () => {
   if (token && storedUser) {
     try {
       // 设置全局Authorization头
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
 
       // 解析用户信息
       userInfo.value = JSON.parse(storedUser)
@@ -154,7 +154,7 @@ const checkStoredLogin = () => {
 // 验证token是否有效（可选）
 const validateToken = token => {
   // 这里可以添加一个对后端API的请求，验证token是否有效
-  // axios.post(`${API_BASE_URL}/auth/validate-token`)
+  // apiClient.post(`${API_BASE_URL}/auth/validate-token`)
   //   .then(response => {
   //     if (!response.data.valid) {
   //       handleLogout()

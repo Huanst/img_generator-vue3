@@ -21,12 +21,14 @@
           :model="loginForm"
           :rules="rules"
           ref="loginFormRef"
-          label-position="top">
+          label-position="top"
+          @submit.prevent="handleLogin">
           <el-form-item prop="username" label="用户名">
             <el-input
               v-model="loginForm.username"
               placeholder="请输入用户名"
-              prefix-icon="User" />
+              prefix-icon="User"
+              @keyup.enter="handleLogin" />
           </el-form-item>
 
           <el-form-item prop="password" label="密码">
@@ -35,12 +37,14 @@
               type="password"
               placeholder="请输入密码"
               prefix-icon="Lock"
-              show-password />
+              show-password
+              @keyup.enter="handleLogin" />
           </el-form-item>
 
           <div class="login-options">
             <el-checkbox v-model="loginForm.remember">记住我</el-checkbox>
-            <el-button link type="primary">忘记密码?</el-button>
+            <!-- 暂时隐藏忘记密码功能，因为API文档中未提供此功能 -->
+            <!-- <el-button link type="primary">忘记密码?</el-button> -->
           </div>
 
           <div class="form-actions">
@@ -69,12 +73,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { User, Lock, Key } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
-import { ElMessage } from 'element-plus'
-import axios from 'axios'
-import { API_BASE_URL } from '../utils/urlUtils'
+import { ElMessage, ElLoading } from 'element-plus'
+import apiClient from '../utils/apiClient'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -96,7 +99,7 @@ const loading = ref(false)
 const loginForm = reactive({
   username: '',
   password: '',
-  remember: false,
+  remember: true, // 默认记住登录状态
 })
 
 // 表单验证规则
@@ -124,12 +127,15 @@ const handleLogin = () => {
     if (valid) {
       loading.value = true
 
+      // 创建请求参数
+      const requestData = {
+        username: loginForm.username,
+        password: loginForm.password,
+      }
+
       // 发送登录请求到后端API
-      axios
-        .post(`${API_BASE_URL}/auth/login`, {
-          username: loginForm.username,
-          password: loginForm.password,
-        })
+      apiClient
+        .post('/auth/login', requestData)
         .then(response => {
           loading.value = false
           console.log('登录响应:', response.data)
@@ -139,6 +145,7 @@ const handleLogin = () => {
             ElMessage({
               type: 'success',
               message: response.data.message || '登录成功',
+              duration: 2000,
             })
 
             // 存储令牌和用户信息
@@ -155,7 +162,8 @@ const handleLogin = () => {
             }
 
             // 设置axios默认Authorization头
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+            apiClient.defaults.headers.common['Authorization'] =
+              `Bearer ${token}`
 
             // 触发登录成功事件
             emit('login', user)
@@ -164,6 +172,7 @@ const handleLogin = () => {
             ElMessage({
               type: 'error',
               message: response.data.message || '登录失败，请重试',
+              duration: 3000,
             })
           }
         })
@@ -178,7 +187,27 @@ const handleLogin = () => {
             // 服务器响应了错误状态码
             console.error('错误状态码:', error.response.status)
             console.error('错误响应数据:', error.response.data)
-            errorMessage = error.response.data.message || errorMessage
+
+            // 根据不同的错误状态码给出友好提示
+            switch (error.response.status) {
+              case 400:
+                errorMessage = '请求参数不正确，请检查用户名和密码'
+                break
+              case 401:
+                errorMessage = '用户名或密码错误'
+                break
+              case 404:
+                errorMessage = '用户不存在'
+                break
+              case 429:
+                errorMessage = '登录尝试次数过多，请稍后再试'
+                break
+              case 500:
+                errorMessage = '服务器内部错误，请稍后再试'
+                break
+              default:
+                errorMessage = error.response.data.message || errorMessage
+            }
           } else if (error.request) {
             // 请求已发送但没有收到响应
             console.error('请求已发送但没有收到响应:', error.request)
@@ -186,11 +215,13 @@ const handleLogin = () => {
           } else {
             // 设置请求时发生错误
             console.error('请求错误:', error.message)
+            errorMessage = '请求发送失败，请稍后再试'
           }
 
           ElMessage({
             type: 'error',
             message: errorMessage,
+            duration: 4000,
           })
         })
     }
@@ -201,6 +232,20 @@ const handleLogin = () => {
 const goToRegister = () => {
   emit('register')
 }
+
+// 检查是否有记住的登录信息
+const checkSavedCredentials = () => {
+  const savedUsername = localStorage.getItem('saved_username')
+  if (savedUsername) {
+    loginForm.username = savedUsername
+    loginForm.remember = true
+  }
+}
+
+// 组件挂载时检查是否有保存的登录信息
+onMounted(() => {
+  checkSavedCredentials()
+})
 </script>
 
 <style scoped>
@@ -250,12 +295,15 @@ const goToRegister = () => {
 .login-options {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 20px;
   align-items: center;
+  margin-bottom: 20px;
+  margin-top: -10px;
 }
 
 .form-actions {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .login-btn {
@@ -307,46 +355,11 @@ const goToRegister = () => {
 }
 
 .register-link {
+  margin-top: 30px;
   text-align: center;
-  margin-top: 8px;
-  color: var(--text-secondary);
 }
 
-:deep(.el-form-item__label) {
-  color: var(--text-color);
-  font-weight: 500;
-  font-size: 14px;
-}
-
-:deep(.el-input__wrapper),
-:deep(.el-textarea__wrapper) {
-  background: var(--card-bg) !important;
-  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1)) !important;
-  box-shadow: none !important;
-  transition: all 0.3s;
-}
-
-:deep(.el-input__wrapper:hover),
-:deep(.el-textarea__wrapper:hover) {
-  border-color: var(--secondary-color, rgba(255, 255, 255, 0.2)) !important;
-}
-
-:deep(.el-input__wrapper.is-focus),
-:deep(.el-textarea__wrapper.is-focus) {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 1px rgba(var(--primary-color), 0.2) !important;
-}
-
-:deep(.el-input__inner),
-:deep(.el-textarea__inner) {
-  color: var(--text-color) !important;
-  background: transparent !important;
-}
-
-:deep(.el-checkbox__label) {
-  color: var(--text-color);
-}
-
+/* 主题切换按钮样式 */
 .theme-toggle {
   position: absolute;
   top: 0;
@@ -381,38 +394,9 @@ const goToRegister = () => {
   transform: rotate(-15deg);
 }
 
-/* 头像容器样式 */
-.avatar-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  animation: fadeIn 0.4s ease;
-}
-
-.username-display {
-  margin-top: 10px;
-  color: var(--text-color);
-  font-weight: 500;
-}
-
-/* 移动端适配 */
-@media (max-width: 768px) {
+@media (max-width: 600px) {
   .login-card-wrapper {
     padding: 10px;
-  }
-
-  .login-title {
-    font-size: 1.5rem;
-  }
-
-  .theme-btn {
-    width: 36px;
-    height: 36px;
-  }
-
-  .theme-icon {
-    font-size: 18px;
   }
 }
 </style>

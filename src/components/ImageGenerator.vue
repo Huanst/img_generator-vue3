@@ -185,7 +185,7 @@ import {
   Expand,
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
-import axios from 'axios'
+import apiClient from '../utils/apiClient'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -322,7 +322,7 @@ const generateImage = async () => {
     console.log('正在请求图像生成，参数:', JSON.stringify(logParams))
 
     // 发送请求
-    const response = await axios.post(
+    const response = await apiClient.post(
       'https://api.siliconflow.cn/v1/images/generations',
       requestParams,
       {
@@ -330,6 +330,7 @@ const generateImage = async () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
+        baseURL: '', // 覆盖默认的baseURL，使用完整URL
       }
     )
 
