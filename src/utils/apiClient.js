@@ -67,6 +67,7 @@ apiClient.interceptors.response.use(
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
+        message: error.message,
       })
     }
 
@@ -114,16 +115,24 @@ apiClient.interceptors.response.use(
       }
     } else if (error.request) {
       // 请求发出但没有响应
-      ElMessage({
-        type: 'error',
-        message: '无法连接到服务器，请检查网络连接',
-        duration: 3000,
-      })
+      if (error.message && error.message.includes('Network Error')) {
+        ElMessage({
+          type: 'error',
+          message: '网络错误，可能是跨域(CORS)问题或服务器无法连接',
+          duration: 5000,
+        })
+      } else {
+        ElMessage({
+          type: 'error',
+          message: '无法连接到服务器，请检查网络连接',
+          duration: 3000,
+        })
+      }
     } else {
       // 请求设置时出错
       ElMessage({
         type: 'error',
-        message: '请求发送失败',
+        message: '请求发送失败: ' + error.message,
         duration: 3000,
       })
     }

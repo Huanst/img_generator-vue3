@@ -5,6 +5,11 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import axios from 'axios'
 import './style.css'
+import { API_BASE_URL } from './utils/urlUtils'
+
+// 输出环境信息
+console.log('应用环境:', import.meta.env.MODE)
+console.log('API基础URL:', API_BASE_URL)
 
 // 配置Axios请求拦截器
 axios.interceptors.request.use(
