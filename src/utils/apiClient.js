@@ -1,14 +1,16 @@
 import axios from 'axios'
-import { API_BASE_URL } from './urlUtils'
+import { API_BASE_URL, getApiUrl } from './urlUtils'
 import { ElMessage } from 'element-plus'
 
 // 创建axios实例
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  // 在生产环境中使用相对路径，避免跨域问题
+  baseURL: import.meta.env.DEV ? API_BASE_URL : '/api',
   timeout: 15000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // 允许跨域请求携带凭证
 })
 
 // 请求拦截器
