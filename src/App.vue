@@ -4,15 +4,16 @@ import ImageGenerator from './components/ImageGenerator.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
-import apiClient from './utils/apiClient'
+import { userState, userActions } from './utils/userStore'
+import { healthAPI } from './utils/apiService'
 import { API_BASE_URL } from './utils/urlUtils'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
-const isLoggedIn = ref(false) // 用户登录状态
 const currentPage = ref('login') // 当前页面: login, register, main, debug
-const userInfo = ref(null) // 用户信息
+
+// 使用用户状态管理（保持响应性）
 
 // 检测系统主题偏好
 const detectSystemTheme = () => {
@@ -80,16 +81,8 @@ const handleMouseMove = e => {
 
 // 用户登录成功处理
 const handleLogin = userData => {
-  isLoggedIn.value = true
-  userInfo.value = userData
   currentPage.value = 'main'
-
-  // 设置全局Authorization头
-  const token =
-    localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
-  if (token) {
-    apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
-  }
+  // 用户状态已在userActions.login中更新
 }
 
 // 处理注册成功后的逻辑
@@ -110,60 +103,19 @@ const goToRegister = () => {
 
 // 用户登出
 const handleLogout = () => {
-  isLoggedIn.value = false
-  userInfo.value = null
+  userActions.logout()
   currentPage.value = 'login'
-
-  // 清除所有存储的认证信息
-  localStorage.removeItem('auth_token')
-  localStorage.removeItem('user_info')
-  sessionStorage.removeItem('auth_token')
-  sessionStorage.removeItem('user_info')
-
-  // 清除Authorization头
-  delete apiClient.defaults.headers.common['Authorization']
 }
 
 // 检查本地存储的登录信息
 const checkStoredLogin = () => {
-  // 首先检查是否有token
-  const token =
-    localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
-  const storedUser =
-    localStorage.getItem('user_info') || sessionStorage.getItem('user_info')
-
-  if (token && storedUser) {
-    try {
-      // 设置全局Authorization头
-      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
-
-      // 解析用户信息
-      userInfo.value = JSON.parse(storedUser)
-      isLoggedIn.value = true
-      currentPage.value = 'main'
-
-      // 可以选择验证token是否有效
-      // validateToken(token)
-    } catch (error) {
-      console.error('解析存储的用户信息失败:', error)
-      handleLogout() // 出错时登出
-    }
+  const restored = userActions.restoreFromStorage()
+  if (restored) {
+    currentPage.value = 'main'
   }
 }
 
-// 验证token是否有效（可选）
-const validateToken = token => {
-  // 这里可以添加一个对后端API的请求，验证token是否有效
-  // apiClient.post(`${API_BASE_URL}/auth/validate-token`)
-  //   .then(response => {
-  //     if (!response.data.valid) {
-  //       handleLogout()
-  //     }
-  //   })
-  //   .catch(() => {
-  //     handleLogout()
-  //   })
-}
+// token验证已集成到userActions中
 
 // 监听全局错误
 onMounted(() => {
@@ -251,10 +203,10 @@ const clearGeneratedImages = () => {
           @login="goToLogin" />
       </template>
 
-      <template v-else-if="currentPage === 'main' && isLoggedIn">
+      <template v-else-if="currentPage === 'main' && userState.isLoggedIn">
         <header class="app-header">
           <div class="user-info">
-            <span class="welcome-text">欢迎, {{ userInfo?.username }}</span>
+            <span class="welcome-text">欢迎, {{ userState.userInfo?.username }}</span>
             <el-button size="small" @click="handleLogout" class="logout-btn"
               >退出登录</el-button
             >

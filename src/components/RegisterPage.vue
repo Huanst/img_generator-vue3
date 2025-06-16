@@ -23,25 +23,7 @@
           ref="registerFormRef"
           label-position="top"
           @submit.prevent="handleRegister">
-          <el-form-item label="头像 (可选)" prop="avatar">
-            <el-upload
-              class="avatar-uploader"
-              action="#"
-              :show-file-list="false"
-              :auto-upload="false"
-              :on-change="handleAvatarChange"
-              :before-upload="beforeAvatarUpload"
-              accept="image/jpeg,image/png,image/gif,image/webp">
-              <img
-                v-if="avatarPreviewUrl"
-                :src="avatarPreviewUrl"
-                class="avatar-preview" />
-              <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
-              <div class="el-upload__tip">
-                点击上传头像，支持 jpg/png/gif/webp 格式，大小不超过5MB
-              </div>
-            </el-upload>
-          </el-form-item>
+
 
           <el-form-item prop="username" label="用户名">
             <el-input
@@ -101,11 +83,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
+import { ref, reactive } from 'vue'
+import { User, Lock, Message, UserFilled } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
-import apiClient from '../utils/apiClient'
+import { userActions } from '../utils/userStore'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -129,46 +111,9 @@ const registerForm = reactive({
   email: '',
   password: '',
   confirmPassword: '',
-  avatarFile: null,
 })
 
-// 头像预览
-const avatarPreviewUrl = ref('')
 
-// 处理头像选择前的验证
-const beforeAvatarUpload = file => {
-  // 检查文件类型
-  const isValidType = [
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-  ].includes(file.type)
-  if (!isValidType) {
-    ElMessage.error('头像只能是 JPG/PNG/GIF/WEBP 格式!')
-    return false
-  }
-
-  // 检查文件大小
-  const isLt5M = file.size / 1024 / 1024 < 5
-  if (!isLt5M) {
-    ElMessage.error('头像大小不能超过 5MB!')
-    return false
-  }
-
-  return true
-}
-
-// 处理头像选择
-const handleAvatarChange = uploadFile => {
-  if (uploadFile.raw) {
-    // 检查文件大小和类型
-    if (beforeAvatarUpload(uploadFile.raw)) {
-      registerForm.avatarFile = uploadFile.raw
-      avatarPreviewUrl.value = URL.createObjectURL(uploadFile.raw)
-    }
-  }
-}
 
 // 密码确认验证器
 const validateConfirmPassword = (rule, value, callback) => {
@@ -225,116 +170,38 @@ const handleToggleTheme = () => {
 }
 
 // 处理注册逻辑
-const handleRegister = () => {
+const handleRegister = async () => {
   if (!registerFormRef.value) return
 
-  registerFormRef.value.validate(valid => {
+  registerFormRef.value.validate(async valid => {
     if (valid) {
       loading.value = true
 
-      // 创建表单数据对象
-      const formData = new FormData()
-      formData.append('username', registerForm.username)
-      formData.append('email', registerForm.email)
-      formData.append('password', registerForm.password)
-      if (registerForm.avatarFile) {
-        formData.append('avatar', registerForm.avatarFile)
+      // 创建JSON数据对象
+      const userData = {
+        username: registerForm.username,
+        email: registerForm.email,
+        password: registerForm.password,
       }
 
-      // 发送注册请求
-      apiClient
-        .post('/auth/register', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+      // 使用用户状态管理进行注册
+      const result = await userActions.register(userData)
+      
+      loading.value = false
+      
+      if (result.success) {
+        // 发送注册成功事件
+        emit('register-success', {
+          username: registerForm.username,
+          email: registerForm.email,
         })
-        .then(response => {
-          loading.value = false
-          if (response.data.status === 'success') {
-            ElMessage({
-              type: 'success',
-              message: response.data.message || '注册成功，请登录',
-              duration: 2000,
-            })
 
-            // 发送注册成功事件
-            emit('register-success', {
-              username: registerForm.username,
-              email: registerForm.email,
-              avatarUrl: response.data.data?.avatarUrl || null,
-            })
-
-            // 延迟跳转到登录页
-            setTimeout(() => {
-              goToLogin()
-            }, 1500)
-          } else {
-            ElMessage({
-              type: 'error',
-              message: response.data.message || '注册失败，请重试',
-              duration: 3000,
-            })
-          }
-        })
-        .catch(error => {
-          loading.value = false
-          console.error('注册请求错误:', error)
-
-          let errorMessage = '注册失败，请重试'
-
-          if (error.response) {
-            // 服务器响应了错误状态码
-            console.error('错误状态码:', error.response.status)
-            console.error('错误响应数据:', error.response.data)
-
-            // 根据错误状态码和消息提供更具体的错误信息
-            switch (error.response.status) {
-              case 400:
-                errorMessage = '请求参数不正确，请检查表单信息'
-                break
-              case 409:
-                if (
-                  error.response.data.message &&
-                  error.response.data.message.includes('用户名已存在')
-                ) {
-                  errorMessage = '用户名已被使用，请更换用户名'
-                } else if (
-                  error.response.data.message &&
-                  error.response.data.message.includes('邮箱已被注册')
-                ) {
-                  errorMessage = '邮箱已被注册，请使用其他邮箱'
-                } else {
-                  errorMessage = '用户名或邮箱已被注册'
-                }
-                break
-              case 413:
-                errorMessage = '上传的文件太大'
-                break
-              case 415:
-                errorMessage = '不支持的文件类型'
-                break
-              case 500:
-                errorMessage = '服务器内部错误，请稍后再试'
-                break
-              default:
-                errorMessage = error.response.data.message || errorMessage
-            }
-          } else if (error.request) {
-            // 请求已发送但没有收到响应
-            console.error('请求已发送但没有收到响应:', error.request)
-            errorMessage = '无法连接到服务器，请检查网络连接'
-          } else {
-            // 设置请求时发生错误
-            console.error('请求错误:', error.message)
-            errorMessage = '请求发送失败，请稍后再试'
-          }
-
-          ElMessage({
-            type: 'error',
-            message: errorMessage,
-            duration: 4000,
-          })
-        })
+        // 延迟跳转到登录页
+        setTimeout(() => {
+          goToLogin()
+        }, 1500)
+      }
+      // 错误处理已在userActions.register中完成
     }
   })
 }
@@ -344,14 +211,7 @@ const goToLogin = () => {
   emit('login')
 }
 
-// 清理头像预览的 URL 对象
-onMounted(() => {
-  return () => {
-    if (avatarPreviewUrl.value) {
-      URL.revokeObjectURL(avatarPreviewUrl.value)
-    }
-  }
-})
+
 </script>
 
 <style scoped>
@@ -398,56 +258,7 @@ onMounted(() => {
   flex: 1;
 }
 
-.avatar-uploader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-}
 
-.avatar-uploader .el-upload {
-  border: 1px dashed var(--border-color, rgba(255, 255, 255, 0.2));
-  border-radius: 12px;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s;
-  width: 120px;
-  height: 120px;
-  text-align: center;
-  background: rgba(0, 0, 0, 0.1);
-}
-
-.avatar-uploader .el-upload:hover {
-  border-color: var(--primary-color);
-  background: rgba(var(--primary-color-rgb, 83, 82, 237), 0.1);
-}
-
-.avatar-uploader-icon {
-  font-size: 28px;
-  color: var(--text-secondary, #ccc);
-  width: 120px;
-  height: 120px;
-  line-height: 120px;
-  text-align: center;
-}
-
-.avatar-preview {
-  width: 120px;
-  height: 120px;
-  object-fit: cover;
-  border-radius: 12px;
-  display: block;
-}
-
-.el-upload__tip {
-  font-size: 12px;
-  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
-  margin-top: 10px;
-  text-align: center;
-  width: 100%;
-  max-width: 280px;
-}
 
 .form-actions {
   display: flex;

@@ -77,7 +77,7 @@ import { ref, reactive, watch, onMounted } from 'vue'
 import { User, Lock, Key } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
-import apiClient from '../utils/apiClient'
+import { userActions } from '../utils/userStore'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -120,110 +120,29 @@ const handleToggleTheme = () => {
 }
 
 // 处理登录逻辑
-const handleLogin = () => {
+const handleLogin = async () => {
   if (!loginFormRef.value) return
 
-  loginFormRef.value.validate(valid => {
+  loginFormRef.value.validate(async valid => {
     if (valid) {
       loading.value = true
 
       // 创建请求参数
-      const requestData = {
+      const credentials = {
         username: loginForm.username,
         password: loginForm.password,
       }
 
-      // 发送登录请求到后端API
-      apiClient
-        .post('/auth/login', requestData)
-        .then(response => {
-          loading.value = false
-          console.log('登录响应:', response.data)
-
-          if (response.data.status === 'success') {
-            // 登录成功
-            ElMessage({
-              type: 'success',
-              message: response.data.message || '登录成功',
-              duration: 2000,
-            })
-
-            // 存储令牌和用户信息
-            const token = response.data.data.token
-            const user = response.data.data.user
-
-            // 如果选择了"记住我"，则将令牌存储在localStorage中，否则存储在sessionStorage中
-            if (loginForm.remember) {
-              localStorage.setItem('auth_token', token)
-              localStorage.setItem('user_info', JSON.stringify(user))
-            } else {
-              sessionStorage.setItem('auth_token', token)
-              sessionStorage.setItem('user_info', JSON.stringify(user))
-            }
-
-            // 设置axios默认Authorization头
-            apiClient.defaults.headers.common['Authorization'] =
-              `Bearer ${token}`
-
-            // 触发登录成功事件
-            emit('login', user)
-          } else {
-            // 登录失败（这种情况不应该发生，因为成功应该是status=success）
-            ElMessage({
-              type: 'error',
-              message: response.data.message || '登录失败，请重试',
-              duration: 3000,
-            })
-          }
-        })
-        .catch(error => {
-          loading.value = false
-          console.error('登录请求错误:', error)
-
-          // 处理错误
-          let errorMessage = '登录失败，请重试'
-
-          if (error.response) {
-            // 服务器响应了错误状态码
-            console.error('错误状态码:', error.response.status)
-            console.error('错误响应数据:', error.response.data)
-
-            // 根据不同的错误状态码给出友好提示
-            switch (error.response.status) {
-              case 400:
-                errorMessage = '请求参数不正确，请检查用户名和密码'
-                break
-              case 401:
-                errorMessage = '用户名或密码错误'
-                break
-              case 404:
-                errorMessage = '用户不存在'
-                break
-              case 429:
-                errorMessage = '登录尝试次数过多，请稍后再试'
-                break
-              case 500:
-                errorMessage = '服务器内部错误，请稍后再试'
-                break
-              default:
-                errorMessage = error.response.data.message || errorMessage
-            }
-          } else if (error.request) {
-            // 请求已发送但没有收到响应
-            console.error('请求已发送但没有收到响应:', error.request)
-            errorMessage = '无法连接到服务器，请检查网络连接'
-          } else {
-            // 设置请求时发生错误
-            console.error('请求错误:', error.message)
-            errorMessage = '请求发送失败，请稍后再试'
-          }
-
-          ElMessage({
-            type: 'error',
-            message: errorMessage,
-            duration: 4000,
-          })
-        })
+      // 使用用户状态管理进行登录
+      const result = await userActions.login(credentials, loginForm.remember)
+      
+      loading.value = false
+      
+      if (result.success) {
+        // 触发登录成功事件
+        emit('login', result.user)
+      }
+      // 错误处理已在userActions.login中完成
     }
   })
 }
