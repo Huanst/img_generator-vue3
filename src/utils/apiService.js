@@ -69,18 +69,16 @@ export const healthAPI = {
  */
 export const imageAPI = {
   /**
-   * 生成图片（预留接口）
+   * 生成图片
    * @param {Object} params - 生成参数
    * @param {string} params.prompt - 提示词
-   * @param {number} params.width - 宽度
-   * @param {number} params.height - 高度
-   * @param {number} params.count - 生成数量
+   * @param {string} params.image_size - 图片尺寸
+   * @param {number} params.batch_size - 生成数量
+   * @param {string} params.model - 模型名称
    * @returns {Promise} API响应
    */
   generate(params) {
-    // 这里需要根据实际的后端图片生成API来实现
-    // 目前API文档中没有提供图片生成接口
-    return apiClient.post('/image/generate', params)
+    return apiClient.post('/generate-image', params)
   },
 
   /**

@@ -301,12 +301,7 @@ const generateImage = async () => {
       )
     }
 
-    // 验证API密钥
-    const apiKey = import.meta.env.VITE_SILICONFLOW_API_KEY
-    if (!apiKey) {
-      console.error('API密钥验证失败: API密钥未配置')
-      throw new Error('API密钥未配置，请检查环境变量VITE_SILICONFLOW_API_KEY')
-    }
+    // 使用本地API，无需验证外部API密钥
 
     // 打印参数（不包含完整图片数据以避免日志过大）
     const logParams = { ...requestParams }
@@ -321,18 +316,8 @@ const generateImage = async () => {
     }
     console.log('正在请求图像生成，参数:', JSON.stringify(logParams))
 
-    // 发送请求
-    const response = await apiClient.post(
-      'https://api.siliconflow.cn/v1/images/generations',
-      requestParams,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        baseURL: '', // 覆盖默认的baseURL，使用完整URL
-      }
-    )
+    // 发送请求到本地API
+    const response = await apiClient.post('/generate-image', requestParams)
 
     // 如果组件已卸载，不继续处理
     if (!isMounted) return
