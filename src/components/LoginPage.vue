@@ -23,11 +23,21 @@
           ref="loginFormRef"
           label-position="top"
           @submit.prevent="handleLogin">
+          
+          <!-- 用户头像显示 -->
+          <div v-if="userAvatar" class="user-avatar-display">
+            <div class="avatar-container">
+              <img :src="userAvatar" alt="用户头像" class="user-avatar-img" />
+              <span class="username-display">{{ loginForm.username }}</span>
+            </div>
+          </div>
+          
           <el-form-item prop="username" label="用户名">
             <el-input
               v-model="loginForm.username"
               placeholder="请输入用户名"
               prefix-icon="User"
+              @input="handleUsernameInput"
               @keyup.enter="handleLogin" />
           </el-form-item>
 
@@ -73,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
 import { User, Lock, Key } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
@@ -94,6 +104,10 @@ const loginFormRef = ref(null)
 
 // 加载状态
 const loading = ref(false)
+
+// 头像相关状态
+const userAvatar = ref('')
+const avatarLoadingTimer = ref(null)
 
 // 登录表单数据
 const loginForm = reactive({
@@ -117,6 +131,45 @@ const rules = {
 // 处理主题切换
 const handleToggleTheme = () => {
   emit('toggleTheme')
+}
+
+// 处理用户名输入，获取用户头像
+const handleUsernameInput = async () => {
+  // 清除之前的定时器
+  if (avatarLoadingTimer.value) {
+    clearTimeout(avatarLoadingTimer.value)
+  }
+  
+  // 如果用户名为空，清除头像
+  if (!loginForm.username.trim()) {
+    userAvatar.value = ''
+    return
+  }
+  
+  // 防抖处理，500ms后执行
+  avatarLoadingTimer.value = setTimeout(async () => {
+    try {
+      // 尝试获取用户头像
+      const response = await fetch(`/api/user/avatar?username=${encodeURIComponent(loginForm.username)}`, {
+        method: 'GET'
+      })
+      
+      if (response.ok) {
+        // 如果响应是图片，创建blob URL
+        const blob = await response.blob()
+        if (blob.type.startsWith('image/')) {
+          userAvatar.value = URL.createObjectURL(blob)
+        } else {
+          userAvatar.value = ''
+        }
+      } else {
+        userAvatar.value = ''
+      }
+    } catch (error) {
+      console.log('获取头像失败:', error)
+      userAvatar.value = ''
+    }
+  }, 500)
 }
 
 // 处理登录逻辑
@@ -164,6 +217,19 @@ const checkSavedCredentials = () => {
 // 组件挂载时检查是否有保存的登录信息
 onMounted(() => {
   checkSavedCredentials()
+})
+
+// 组件卸载时清理资源
+onUnmounted(() => {
+  // 清除定时器
+  if (avatarLoadingTimer.value) {
+    clearTimeout(avatarLoadingTimer.value)
+  }
+  
+  // 清理blob URL
+  if (userAvatar.value && userAvatar.value.startsWith('blob:')) {
+    URL.revokeObjectURL(userAvatar.value)
+  }
 })
 </script>
 
@@ -313,9 +379,66 @@ onMounted(() => {
   transform: rotate(-15deg);
 }
 
+/* 用户头像显示样式 */
+.user-avatar-display {
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.avatar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+.avatar-container:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.user-avatar-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.user-avatar-img:hover {
+  border-color: var(--primary-color);
+  transform: scale(1.05);
+}
+
+.username-display {
+  color: var(--text-color, #fff);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  opacity: 0.8;
+}
+
 @media (max-width: 600px) {
   .login-card-wrapper {
     padding: 10px;
+  }
+  
+  .user-avatar-img {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .username-display {
+    font-size: 12px;
   }
 }
 </style>

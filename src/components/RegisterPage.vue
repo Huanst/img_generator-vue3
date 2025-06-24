@@ -25,6 +25,28 @@
           @submit.prevent="handleRegister">
 
 
+          <!-- 头像上传 -->
+          <el-form-item label="头像">
+            <div class="avatar-upload">
+              <div class="avatar-preview" @click="triggerFileInput">
+                <img v-if="avatarPreview" :src="avatarPreview" alt="头像预览" class="avatar-img" />
+                <div v-else class="avatar-placeholder">
+                  <el-icon class="avatar-icon"><Plus /></el-icon>
+                  <span class="upload-text">点击上传头像</span>
+                </div>
+              </div>
+              <input
+                ref="fileInput"
+                type="file"
+                accept="image/*"
+                @change="handleAvatarChange"
+                style="display: none" />
+              <div class="avatar-tips">
+                <span>支持 JPG、PNG 格式，文件大小不超过 2MB</span>
+              </div>
+            </div>
+          </el-form-item>
+
           <el-form-item prop="username" label="用户名">
             <el-input
               v-model="registerForm.username"
@@ -84,7 +106,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
-import { User, Lock, Message, UserFilled } from '@element-plus/icons-vue'
+import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
 import { userActions } from '../utils/userStore'
@@ -101,9 +123,14 @@ const emit = defineEmits(['toggleTheme', 'register-success', 'login'])
 
 // 表单引用
 const registerFormRef = ref(null)
+const fileInput = ref(null)
 
 // 加载状态
 const loading = ref(false)
+
+// 头像相关状态
+const avatarFile = ref(null)
+const avatarPreview = ref('')
 
 // 注册表单数据
 const registerForm = reactive({
@@ -169,6 +196,39 @@ const handleToggleTheme = () => {
   emit('toggleTheme')
 }
 
+// 触发文件选择
+const triggerFileInput = () => {
+  fileInput.value?.click()
+}
+
+// 处理头像文件变化
+const handleAvatarChange = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  // 验证文件类型
+  if (!file.type.startsWith('image/')) {
+    ElMessage.error('请选择图片文件')
+    return
+  }
+
+  // 验证文件大小 (2MB)
+  if (file.size > 2 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 2MB')
+    return
+  }
+
+  // 保存文件对象
+  avatarFile.value = file
+
+  // 创建预览
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    avatarPreview.value = e.target.result
+  }
+  reader.readAsDataURL(file)
+}
+
 // 处理注册逻辑
 const handleRegister = async () => {
   if (!registerFormRef.value) return
@@ -177,31 +237,86 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
 
-      // 创建JSON数据对象
-      const userData = {
-        username: registerForm.username,
-        email: registerForm.email,
-        password: registerForm.password,
-      }
-
-      // 使用用户状态管理进行注册
-      const result = await userActions.register(userData)
-      
-      loading.value = false
-      
-      if (result.success) {
-        // 发送注册成功事件
-        emit('register-success', {
+      try {
+        // 先注册用户（不包含头像）
+        const registerData = {
           username: registerForm.username,
           email: registerForm.email,
+          password: registerForm.password
+        }
+
+        const registerResponse = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(registerData)
         })
 
-        // 延迟跳转到登录页
-        setTimeout(() => {
-          goToLogin()
-        }, 1500)
+        const registerResult = await registerResponse.json()
+        
+        if (registerResponse.ok && registerResult.success) {
+          // 如果有头像文件，单独上传头像
+          if (avatarFile.value) {
+            try {
+              // 先登录获取token
+              const loginResponse = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  username: registerForm.username,
+                  password: registerForm.password
+                })
+              })
+              
+              const loginResult = await loginResponse.json()
+              
+              if (loginResponse.ok && loginResult.success) {
+                // 上传头像
+                const avatarFormData = new FormData()
+                avatarFormData.append('avatar', avatarFile.value)
+                
+                const avatarResponse = await fetch('/api/user/avatar', {
+                  method: 'POST',
+                  headers: {
+                    'Authorization': `Bearer ${loginResult.token}`
+                  },
+                  body: avatarFormData
+                })
+                
+                if (!avatarResponse.ok) {
+                  console.warn('头像上传失败，但注册成功')
+                }
+              }
+            } catch (avatarError) {
+              console.warn('头像上传失败:', avatarError)
+            }
+          }
+          
+          loading.value = false
+          ElMessage.success('注册成功！')
+          
+          // 发送注册成功事件
+          emit('register-success', {
+            username: registerForm.username,
+            email: registerForm.email,
+          })
+
+          // 延迟跳转到登录页
+          setTimeout(() => {
+            goToLogin()
+          }, 1500)
+        } else {
+          loading.value = false
+          ElMessage.error(registerResult.message || '注册失败，请重试')
+        }
+      } catch (error) {
+        loading.value = false
+        console.error('注册请求失败:', error)
+        ElMessage.error('网络错误，请检查连接后重试')
       }
-      // 错误处理已在userActions.register中完成
     }
   })
 }
@@ -355,9 +470,71 @@ const goToLogin = () => {
   transform: rotate(-15deg);
 }
 
+/* 头像上传样式 */
+.avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar-preview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 2px dashed rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.avatar-preview:hover {
+  border-color: var(--primary-color);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.avatar-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.avatar-icon {
+  font-size: 24px;
+}
+
+.upload-text {
+  font-size: 12px;
+  text-align: center;
+}
+
+.avatar-tips {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
 @media (max-width: 600px) {
   .register-card-wrapper {
     padding: 10px;
+  }
+  
+  .avatar-preview {
+    width: 80px;
+    height: 80px;
   }
 }
 </style>

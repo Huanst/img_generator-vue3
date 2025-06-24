@@ -65,12 +65,13 @@ onUnmounted(() => {
   overflow: hidden;
   position: relative;
   width: 100%;
-  z-index: 1;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   transition: all 0.3s ease;
   margin-bottom: 20px;
 }
+
+
 
 .primary {
   background: linear-gradient(

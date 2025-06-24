@@ -48,6 +48,39 @@ export const userAPI = {
   getProfile() {
     return apiClient.get('/user/profile')
   },
+
+  /**
+   * 上传用户头像
+   * @param {FormData} formData - 包含头像文件的FormData
+   * @returns {Promise} API响应
+   */
+  uploadAvatar(formData) {
+    return apiClient.post('/user/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  /**
+   * 获取用户头像
+   * @param {string} username - 用户名（可选）
+   * @returns {Promise} API响应
+   */
+  getAvatar(username = null) {
+    const url = username ? `/user/avatar?username=${encodeURIComponent(username)}` : '/user/avatar'
+    return apiClient.get(url, {
+      responseType: 'blob'
+    })
+  },
+
+  /**
+   * 删除用户头像
+   * @returns {Promise} API响应
+   */
+  deleteAvatar() {
+    return apiClient.delete('/user/avatar')
+  },
 }
 
 /**

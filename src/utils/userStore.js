@@ -1,4 +1,4 @@
-import { ref, reactive } from 'vue'
+import { reactive } from 'vue'
 import { authAPI, userAPI } from './apiService'
 import apiClient from './apiClient'
 import { ElMessage } from 'element-plus'
@@ -191,8 +191,9 @@ export const userActions = {
 
   /**
    * 从本地存储恢复用户状态
+   * @returns {Promise<boolean>} 恢复结果
    */
-  restoreFromStorage() {
+  async restoreFromStorage() {
     const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token')
     const storedUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info')
     
@@ -205,10 +206,15 @@ export const userActions = {
         // 设置axios默认Authorization头
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
         
-        // 验证token有效性
-        this.validateToken()
+        // 验证token有效性并获取最新用户信息
+        const validationResult = await this.validateToken()
         
-        return true
+        if (validationResult.success) {
+          // 获取最新的用户信息，包括头像URL
+          await this.getUserProfile()
+        }
+        
+        return validationResult.success
       } catch (error) {
         console.error('恢复用户状态失败:', error)
         this.logout()
@@ -229,6 +235,11 @@ export const userActions = {
       
       if (response.data.status === 'success') {
         userState.userInfo = response.data.data.user
+        
+        // 更新本地存储中的用户信息
+        const storage = localStorage.getItem('auth_token') ? localStorage : sessionStorage
+        storage.setItem('user_info', JSON.stringify(userState.userInfo))
+        
         return { success: true, user: response.data.data.user }
       } else {
         throw new Error('获取用户信息失败')

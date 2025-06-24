@@ -1,5 +1,8 @@
 <template>
-  <glassmorphic-card variant="primary" :showGlow="true">
+  <glassmorphic-card
+    variant="primary"
+    :showGlow="true"
+    class="image-generator-card">
     <div class="generator-header">
       <h2 class="generator-title">文字生成图像</h2>
 
@@ -397,12 +400,14 @@ watch([width, height], () => {
 </script>
 
 <style scoped>
+/* 移除滚动条设置，使用全局滚动 */
 .generator-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
   position: relative;
+  z-index: 1;
 }
 
 .generator-title {
@@ -873,11 +878,11 @@ watch([width, height], () => {
   }
 }
 
-/* 添加主题切换按钮样式 */
+/* 主题切换按钮容器 */
 .theme-toggle {
-  position: absolute;
-  top: 0;
-  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .theme-btn {
