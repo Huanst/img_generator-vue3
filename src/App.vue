@@ -161,6 +161,8 @@ const checkStoredLogin = async () => {
   try {
     const restored = await userActions.restoreFromStorage()
     if (restored) {
+      // 确保用户信息完全加载后再切换页面
+      await userActions.getUserProfile()
       currentPage.value = 'main'
     }
   } catch (error) {

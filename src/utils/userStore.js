@@ -206,13 +206,8 @@ export const userActions = {
         // 设置axios默认Authorization头
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
         
-        // 验证token有效性并获取最新用户信息
+        // 验证token有效性
         const validationResult = await this.validateToken()
-        
-        if (validationResult.success) {
-          // 获取最新的用户信息，包括头像URL
-          await this.getUserProfile()
-        }
         
         return validationResult.success
       } catch (error) {
