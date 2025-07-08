@@ -110,6 +110,7 @@ import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
 import { userActions } from '../utils/userStore'
+import { authAPI, userAPI } from '../utils/apiservice'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -245,50 +246,32 @@ const handleRegister = async () => {
           password: registerForm.password
         }
 
-        const registerResponse = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(registerData)
-        })
-
-        const registerResult = await registerResponse.json()
+        const registerResponse = await authAPI.register(registerData)
+        const registerResult = registerResponse.data
         
-        if (registerResponse.ok && registerResult.success) {
+        if (registerResult.success) {
           // 如果有头像文件，单独上传头像
           if (avatarFile.value) {
             try {
               // 先登录获取token
-              const loginResponse = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  username: registerForm.username,
-                  password: registerForm.password
-                })
+              const loginResponse = await authAPI.login({
+                username: registerForm.username,
+                password: registerForm.password
               })
               
-              const loginResult = await loginResponse.json()
+              const loginResult = loginResponse.data
               
-              if (loginResponse.ok && loginResult.success) {
+              if (loginResult.success) {
+                // 保存token到本地存储
+                localStorage.setItem('auth_token', loginResult.token)
+                
                 // 上传头像
                 const avatarFormData = new FormData()
                 avatarFormData.append('avatar', avatarFile.value)
                 
-                const avatarResponse = await fetch('/api/user/avatar', {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': `Bearer ${loginResult.token}`
-                  },
-                  body: avatarFormData
-                })
+                await userAPI.uploadAvatar(avatarFormData)
                 
-                if (!avatarResponse.ok) {
-                  console.warn('头像上传失败，但注册成功')
-                }
+                console.log('头像上传成功')
               }
             } catch (avatarError) {
               console.warn('头像上传失败:', avatarError)
@@ -315,7 +298,13 @@ const handleRegister = async () => {
       } catch (error) {
         loading.value = false
         console.error('注册请求失败:', error)
-        ElMessage.error('网络错误，请检查连接后重试')
+        
+        // 处理具体的错误信息
+        if (error.response && error.response.data) {
+          ElMessage.error(error.response.data.message || '注册失败，请重试')
+        } else {
+          ElMessage.error('网络错误，请检查连接后重试')
+        }
       }
     }
   })

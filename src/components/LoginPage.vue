@@ -83,11 +83,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, onUnmounted } from 'vue'
-import { User, Lock, Key } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, onUnmounted, watch } from 'vue'
+import { User, Lock, UserFilled } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { userActions } from '../utils/userStore'
+import { userAPI } from '../utils/apiservice'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -150,18 +151,11 @@ const handleUsernameInput = async () => {
   avatarLoadingTimer.value = setTimeout(async () => {
     try {
       // 尝试获取用户头像
-      const response = await fetch(`/api/user/avatar?username=${encodeURIComponent(loginForm.username)}`, {
-        method: 'GET'
-      })
+      const response = await userAPI.getAvatar(loginForm.username)
       
-      if (response.ok) {
-        // 如果响应是图片，创建blob URL
-        const blob = await response.blob()
-        if (blob.type.startsWith('image/')) {
-          userAvatar.value = URL.createObjectURL(blob)
-        } else {
-          userAvatar.value = ''
-        }
+      // 如果响应是图片，创建blob URL
+      if (response.data && response.data.type.startsWith('image/')) {
+        userAvatar.value = URL.createObjectURL(response.data)
       } else {
         userAvatar.value = ''
       }
