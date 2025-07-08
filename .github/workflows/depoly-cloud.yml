@@ -18,11 +18,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm' # 仍然可以保留 pnpm 缓存，因为它会为 pnpm install 后的依赖服务
+          # cache: 'pnpm' # 这里的缓存仍然是针对依赖的，而不是 pnpm 本身
 
-      # 新增的步骤：全局安装 pnpm
-      - name: Install pnpm
-        run: npm install -g pnpm # 使用 npm 全局安装 pnpm
+      # 新增的步骤：使用 pnpm 官方 action 设置 pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8 # 推荐指定 pnpm 的版本，例如 8
+          run_install: false # 不要在这一步自动运行 pnpm install，我们后面会有专门的步骤
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
