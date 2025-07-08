@@ -51,7 +51,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
-import { healthAPI } from '../utils/apiService'
+import { healthAPI } from '../utils/apiservice'
 import { API_BASE_URL } from '../utils/urlUtils'
 import { ElMessage } from 'element-plus'
 

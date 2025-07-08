@@ -114,7 +114,7 @@ import { ElMessage, ElLoading } from 'element-plus'
 import { EditPen, ArrowLeft } from '@element-plus/icons-vue'
 import { userState, userActions } from '../utils/userStore'
 import { API_SERVER_URL } from '../utils/urlUtils'
-import { userAPI } from '../utils/apiService'
+import { userAPI } from '../utils/apiservice'
 
 // 接收从父组件传来的props
 const props = defineProps({

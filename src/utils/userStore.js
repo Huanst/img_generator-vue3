@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { authAPI, userAPI } from './apiService'
+import { authAPI, userAPI } from './apiservice'
 import apiClient from './apiClient'
 import { ElMessage } from 'element-plus'
 
