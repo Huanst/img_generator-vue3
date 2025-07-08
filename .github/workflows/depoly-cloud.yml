@@ -17,14 +17,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: 'v22.17.0'
           # cache: 'pnpm' # 这里的缓存仍然是针对依赖的，而不是 pnpm 本身
 
       # 新增的步骤：使用 pnpm 官方 action 设置 pnpm
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8 # 推荐指定 pnpm 的版本，例如 8
+          version: 10.12.4 # 推荐指定 pnpm 的版本，例如 8
           run_install: false # 不要在这一步自动运行 pnpm install，我们后面会有专门的步骤
 
       - name: Install dependencies
