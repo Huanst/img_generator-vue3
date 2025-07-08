@@ -4,7 +4,7 @@ name: Deploy Website
 on:
   push:
     branches:
-      - main # 当代码推送到 main 分支时触发
+      - main
 
 jobs:
   build-and-deploy:
@@ -18,32 +18,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'pnpm'
+          cache: 'pnpm' # 仍然可以保留 pnpm 缓存，因为它会为 pnpm install 后的依赖服务
+
+      # 新增的步骤：全局安装 pnpm
+      - name: Install pnpm
+        run: npm install -g pnpm # 使用 npm 全局安装 pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build project
-        run: pnpm build # 构建你的前端项目，通常输出到 `dist` 目录
+        run: pnpm build
 
-      - name: Upload build artifacts (Optional, for debugging or later use)
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist-build
-          path: dist # 上传 dist 目录
-
-      - name: Deploy files to Server # 使用 appleboy/scp-action 进行文件传输
+      - name: Deploy files to Server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/" # 你构建后的文件目录，通常是 dist
-          target: ${{ secrets.DEPLOY_PATH }} # 服务器上的目标路径
-          strip_components: 1 # 如果你想只传输 dist 目录下的内容，而不是包含 dist 目录本身，则设置为 1
-          # 如果你的目标目录 `/www/wwwroot/your_website` 已经存在，
-          # 且你想把 dist 里的内容直接放到 `/www/wwwroot/your_website`，
-          # 那么 strip_components: 1 是必要的
+          source: "dist/"
+          target: ${{ secrets.DEPLOY_PATH }}
+          strip_components: 1
 
       - name: Execute post-deployment commands on Server (Optional)
         uses: appleboy/ssh-action@master
@@ -52,7 +47,4 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # 例如，如果你需要重启 Nginx 或清除缓存
-            # sudo systemctl restart nginx
-            # cd ${{ secrets.DEPLOY_PATH }} && php artisan cache:clear # 如果是 PHP 项目
             echo "部署完成，服务器端操作已执行。"
