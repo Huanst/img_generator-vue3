@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL, getApiUrl } from './urlUtils'
+import { API_BASE_URL, getApiUrl } from './urlutils'
 import { ElMessage } from 'element-plus'
 
 // 创建axios实例
