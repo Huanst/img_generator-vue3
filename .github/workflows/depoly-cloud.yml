@@ -1,58 +1,58 @@
-name: 部署到服务器
+# .github/workflows/deploy.yml
+name: Deploy Website
 
 on:
   push:
     branches:
-      - main  # 当 main 分支有提交时触发
+      - main # 当代码推送到 main 分支时触发
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
-      # 步骤 1: 检出代码
-      - name: 检出代码
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      # 步骤 2: 设置 Node.js
-      - name: 设置 Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'pnpm'
 
-      # 步骤 3: 安装 pnpm
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v2
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build project
+        run: pnpm build # 构建你的前端项目，通常输出到 `dist` 目录
+
+      - name: Upload build artifacts (Optional, for debugging or later use)
+        uses: actions/upload-artifact@v4
         with:
-          version: '9.8.0'
+          name: dist-build
+          path: dist # 上传 dist 目录
 
-      # 步骤 4: 安装依赖
-      - name: 安装依赖
-        run: pnpm install
+      - name: Deploy files to Server # 使用 appleboy/scp-action 进行文件传输
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "dist/" # 你构建后的文件目录，通常是 dist
+          target: ${{ secrets.DEPLOY_PATH }} # 服务器上的目标路径
+          strip_components: 1 # 如果你想只传输 dist 目录下的内容，而不是包含 dist 目录本身，则设置为 1
+          # 如果你的目标目录 `/www/wwwroot/your_website` 已经存在，
+          # 且你想把 dist 里的内容直接放到 `/www/wwwroot/your_website`，
+          # 那么 strip_components: 1 是必要的
 
-      # 不再需要生成.env.local文件，因为使用本地API代理
-
-      # 步骤 5: 构建项目
-      - name: 构建项目
-        run: pnpm build
-
-      # 步骤 6: 配置 SSH
-      - name: 配置 SSH
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SERVER_PRIVATE_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-
-      # 步骤 7: 清理并部署
-      - name: 清理并部署
-        env:
-          SSH_AUTH_SOCK: /dev/null
-        run: |
-          # 清理目标目录（保留 .user.ini）
-          ssh -i ~/.ssh/deploy_key deploy@${{ secrets.SERVER_HOST }} '
-            cd /www/wwwroot/huanst.cn/ &&
-            find . -not -name ".user.ini" -delete &&
-            echo "Directory cleaned"
-          '
-          # 部署新文件
-          scp -i ~/.ssh/deploy_key -r dist/* deploy@${{ secrets.SERVER_HOST }}:/www/wwwroot/huanst.cn/
+      - name: Execute post-deployment commands on Server (Optional)
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # 例如，如果你需要重启 Nginx 或清除缓存
+            # sudo systemctl restart nginx
+            # cd ${{ secrets.DEPLOY_PATH }} && php artisan cache:clear # 如果是 PHP 项目
+            echo "部署完成，服务器端操作已执行。"
