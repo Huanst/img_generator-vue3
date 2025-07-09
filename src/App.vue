@@ -7,7 +7,7 @@ import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
 import { userState, userActions } from './utils/userStore'
 import { healthAPI } from './utils/apiservice'
-import { API_BASE_URL, API_SERVER_URL } from './utils/urlUtils'
+import { API_BASE_URL, API_SERVER_URL } from './utils/urlutils'
 
 const generatedImages = ref([])
 const errorMessage = ref('')

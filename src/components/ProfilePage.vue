@@ -113,7 +113,7 @@ import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { EditPen, ArrowLeft } from '@element-plus/icons-vue'
 import { userState, userActions } from '../utils/userStore'
-import { API_SERVER_URL } from '../utils/urlUtils'
+import { API_SERVER_URL } from '../utils/urlutils'
 import { userAPI } from '../utils/apiservice'
 
 // 接收从父组件传来的props
@@ -150,13 +150,7 @@ const userInfo = computed(() => userState.userInfo)
 
 // 默认头像
 const defaultAvatarUrl = computed(() => {
-  return `data:image/svg+xml;base64,${btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
-      <circle cx="60" cy="60" r="60" fill="#f0f0f0"/>
-      <circle cx="60" cy="45" r="20" fill="#d0d0d0"/>
-      <path d="M20 100 Q20 80 40 80 L80 80 Q100 80 100 100 L100 120 L20 120 Z" fill="#d0d0d0"/>
-    </svg>
-  `)}`
+  return '/default-avatar.png'
 })
 
 // 表单验证规则
@@ -167,24 +161,48 @@ const rules = {
 }
 
 // 初始化用户信息
-const initUserInfo = () => {
+const initUserInfo = async () => {
+  // 首先尝试获取最新的用户信息
+  await refreshUserProfile()
+  
   if (userInfo.value) {
     profileForm.username = userInfo.value.username || ''
     profileForm.email = userInfo.value.email || ''
     profileForm.nickname = userInfo.value.nickname || userInfo.value.username || ''
     
-    // 设置头像
-    if (userInfo.value.avatarUrl) {
-      // 如果avatarUrl已经是完整URL，直接使用
-      if (userInfo.value.avatarUrl.startsWith('http')) {
-        currentAvatar.value = userInfo.value.avatarUrl
-      } else {
-        // 否则拼接完整URL
-        currentAvatar.value = `${API_SERVER_URL}${userInfo.value.avatarUrl}`
-      }
+    // 设置头像URL
+    updateAvatarUrl()
+  }
+}
+
+// 更新头像URL的统一方法
+const updateAvatarUrl = () => {
+  if (userInfo.value?.avatar_url || userInfo.value?.avatarUrl) {
+    // 优先使用avatar_url，如果没有则使用avatarUrl
+    const avatarPath = userInfo.value.avatar_url || userInfo.value.avatarUrl
+    
+    // 如果已经是完整URL，直接使用
+    if (avatarPath.startsWith('http')) {
+      currentAvatar.value = avatarPath
     } else {
-      currentAvatar.value = defaultAvatarUrl.value
+      // 否则拼接完整URL
+      currentAvatar.value = `${API_SERVER_URL}${avatarPath}`
     }
+  } else {
+    currentAvatar.value = defaultAvatarUrl.value
+  }
+}
+
+// 刷新用户资料信息
+const refreshUserProfile = async () => {
+  try {
+    const result = await userActions.getUserProfile()
+    if (result.success) {
+      // 更新头像URL
+      updateAvatarUrl()
+    }
+  } catch (error) {
+    console.error('获取用户资料失败:', error)
   }
 }
 
@@ -243,11 +261,16 @@ const uploadAvatar = async (file) => {
       
       // 更新用户信息中的头像URL
       if (userState.userInfo) {
-        userState.userInfo.avatarUrl = result.data.avatarUrl
+        // 使用后端返回的头像URL，优先使用avatar_url字段
+        userState.userInfo.avatar_url = result.data.avatar_url || result.data.avatarUrl
+        userState.userInfo.avatarUrl = result.data.avatar_url || result.data.avatarUrl
         
         // 更新本地存储
         const storage = localStorage.getItem('auth_token') ? localStorage : sessionStorage
         storage.setItem('user_info', JSON.stringify(userState.userInfo))
+        
+        // 更新当前显示的头像
+        updateAvatarUrl()
       }
     } else {
       throw new Error(result.message || '头像上传失败')
@@ -265,17 +288,7 @@ const uploadAvatar = async (file) => {
     ElMessage.error(errorMessage)
     
     // 恢复原头像
-    if (userInfo.value?.avatarUrl) {
-      // 如果avatarUrl已经是完整URL，直接使用
-      if (userInfo.value.avatarUrl.startsWith('http')) {
-        currentAvatar.value = userInfo.value.avatarUrl
-      } else {
-        // 否则拼接完整URL
-        currentAvatar.value = `${API_SERVER_URL}${userInfo.value.avatarUrl}`
-      }
-    } else {
-      currentAvatar.value = defaultAvatarUrl.value
-    }
+    updateAvatarUrl()
   } finally {
     uploadingAvatar.value = false
     // 清空文件输入框
@@ -333,8 +346,8 @@ const handleBack = () => {
 }
 
 // 组件挂载时初始化
-onMounted(() => {
-  initUserInfo()
+onMounted(async () => {
+  await initUserInfo()
 })
 </script>
 

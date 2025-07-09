@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL } from './src/utils/urlUtils.js'
+import { API_BASE_URL } from './src/utils/urlutils.js'
 
 // 配置axios实例
 const api = axios.create({
