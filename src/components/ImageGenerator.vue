@@ -35,9 +35,11 @@
           v-model="prompt"
           type="textarea"
           :rows="3"
+          resize="none"
           placeholder="描述你想要生成的图片..."
           :disabled="loading"
-          @keydown.enter.prevent="handleGenerate" />
+          @keydown.enter.prevent="handleGenerate"
+          class="fixed-height-textarea" />
         <div class="character-count" :class="{ warning: prompt.length > 950 }">
           {{ prompt.length }}/1000
         </div>
@@ -391,6 +393,35 @@ const handleGenerate = () => {
 // 监听分辨率选择变化
 watch(selectedSize, newVal => {
   setPresetSize(newVal)
+})
+
+// 监听高级选项展开状态变化，调整页面滚动位置
+watch(showAdditionalOptions, (newVal) => {
+  if (newVal) {
+    // 高级选项展开时，延迟一段时间后调整滚动位置
+    setTimeout(() => {
+      const generatorCard = document.querySelector('.image-generator-card')
+      const header = document.querySelector('.app-header')
+      
+      if (generatorCard && header) {
+        const headerHeight = header.offsetHeight
+        const cardRect = generatorCard.getBoundingClientRect()
+        const viewportHeight = window.innerHeight
+        
+        // 如果卡片底部超出视口，调整滚动位置
+        if (cardRect.bottom > viewportHeight) {
+          const scrollTop = window.pageYOffset + cardRect.bottom - viewportHeight + 50
+          // 确保不会滚动过头，让头部消失
+          const maxScrollTop = window.pageYOffset + cardRect.top - headerHeight - 20
+          
+          window.scrollTo({
+            top: Math.min(scrollTop, Math.max(0, maxScrollTop)),
+            behavior: 'smooth'
+          })
+        }
+      }
+    }, 300) // 等待DOM更新完成
+  }
 })
 
 // 监听宽度和高度变化
@@ -911,5 +942,26 @@ watch([width, height], () => {
 
 .theme-icon.is-dark {
   transform: rotate(-15deg);
+}
+
+/* 固定高度的文字输入框样式 */
+.fixed-height-textarea :deep(.el-textarea__inner) {
+  height: 72px !important;
+  min-height: 72px !important;
+  max-height: 72px !important;
+  line-height: 1.5;
+  overflow-y: auto;
+  resize: none !important;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+/* 确保文字输入框在不同状态下保持固定高度 */
+.fixed-height-textarea :deep(.el-textarea__inner):focus {
+  height: 72px !important;
+}
+
+.fixed-height-textarea :deep(.el-textarea__inner):disabled {
+  height: 72px !important;
 }
 </style>

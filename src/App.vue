@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import ImageGenerator from './components/ImageGenerator.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
@@ -86,9 +86,21 @@ const handleMouseMove = e => {
 }
 
 // 用户登录成功处理
-const handleLogin = userData => {
+const handleLogin = async userData => {
+  console.log('登录成功，用户数据:', userData)
   currentPage.value = 'main'
+  
   // 用户状态已在userActions.login中更新
+  // 添加小延迟确保DOM更新完成后再刷新用户信息
+  setTimeout(async () => {
+    try {
+      console.log('开始刷新用户信息...')
+      const result = await userActions.getUserProfile()
+      console.log('用户信息刷新结果:', result)
+    } catch (error) {
+      console.error('刷新用户信息失败:', error)
+    }
+  }, 100)
 }
 
 // 处理注册成功后的逻辑
@@ -134,13 +146,16 @@ const handleSettings = () => {
 
 // 获取用户头像URL（计算属性，确保响应式更新）
 const userAvatarUrl = computed(() => {
-  if (userState.userInfo?.avatar_url) {
-    // 如果avatar_url已经是完整URL，直接返回
-    if (userState.userInfo.avatar_url.startsWith('http')) {
-      return userState.userInfo.avatar_url
+  // 优先使用avatar_url字段，如果没有则使用avatarUrl字段（向后兼容）
+  const avatarPath = userState.userInfo?.avatar_url || userState.userInfo?.avatarUrl
+  
+  if (avatarPath) {
+    // 如果已经是完整URL，直接返回
+    if (avatarPath.startsWith('http')) {
+      return avatarPath
     }
     // 否则拼接完整URL
-    return `${API_SERVER_URL}${userState.userInfo.avatar_url}`
+    return `${API_SERVER_URL}${avatarPath}`
   }
   return defaultAvatarUrl.value
 })
@@ -169,6 +184,28 @@ const checkStoredLogin = async () => {
     console.error('检查登录状态失败:', error)
   }
 }
+
+// 监听用户状态变化（用于调试）
+watch(
+  () => userState.userInfo,
+  (newUserInfo, oldUserInfo) => {
+    console.log('用户信息变化:', {
+      old: oldUserInfo,
+      new: newUserInfo,
+      avatarUrl: newUserInfo?.avatar_url || newUserInfo?.avatarUrl,
+      computedAvatarUrl: userAvatarUrl.value
+    })
+  },
+  { deep: true }
+)
+
+// 监听头像URL变化（用于调试）
+watch(
+  userAvatarUrl,
+  (newUrl, oldUrl) => {
+    console.log('头像URL变化:', { old: oldUrl, new: newUrl })
+  }
+)
 
 // token验证已集成到userActions中
 
@@ -222,10 +259,54 @@ const scrollToResults = () => {
     setTimeout(() => {
       const resultsSection = document.querySelector('.results-section')
       if (resultsSection) {
-        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        // 使用 'nearest' 确保结果区域可见，但不会让页面顶部跑出视野
+        resultsSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'nearest',
+          inline: 'nearest'
+        })
       }
     }, 300)
   }
+}
+
+/**
+ * 确保页面顶部内容始终可见的滚动处理函数
+ * @param {string} targetSelector - 目标元素选择器
+ * @param {Object} options - 滚动选项
+ */
+const scrollToElementSafely = (targetSelector, options = {}) => {
+  const defaultOptions = {
+    behavior: 'smooth',
+    block: 'start',
+    inline: 'nearest'
+  }
+  
+  const finalOptions = { ...defaultOptions, ...options }
+  
+  setTimeout(() => {
+    const targetElement = document.querySelector(targetSelector)
+    const headerElement = document.querySelector('.app-header')
+    
+    if (targetElement && headerElement) {
+      const headerHeight = headerElement.offsetHeight
+      const targetRect = targetElement.getBoundingClientRect()
+      const viewportHeight = window.innerHeight
+      
+      // 如果目标元素在视口下方，且滚动后会导致头部不可见
+      if (targetRect.top > viewportHeight) {
+        // 计算合适的滚动位置，确保头部仍然可见
+        const scrollTop = window.pageYOffset + targetRect.top - headerHeight - 20
+        window.scrollTo({
+          top: Math.max(0, scrollTop),
+          behavior: finalOptions.behavior
+        })
+      } else {
+        // 使用标准滚动
+        targetElement.scrollIntoView(finalOptions)
+      }
+    }
+  }, 300)
 }
 
 // 清空生成的图像结果
@@ -541,7 +622,8 @@ body {
   padding: 20px;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
 }
 
 .profile-page-container {
@@ -719,7 +801,8 @@ body {
   width: 100%;
   position: relative;
   flex: 1;
-  padding-bottom: 250px; /* 为底部 footer 留出空间 */
+  min-height: calc(100vh - 200px); /* 确保主要内容区域有足够的最小高度 */
+  padding-bottom: 100px; /* 为底部 footer 留出空间 */
 }
 
 .app-sections {
