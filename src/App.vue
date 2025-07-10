@@ -7,9 +7,9 @@ import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
 import HistoryModal from './components/HistoryModal.vue'
 import ImageLoadTest from './components/ImageLoadTest.vue'
-import { userState, userActions } from './utils/userStore.js'
-import { healthAPI } from './utils/apiservice.js'
-import { API_BASE_URL, API_SERVER_URL } from './utils/urlutils.js'
+import { userState, userActions } from '@/utils/userStore'
+import { healthAPI } from '@/utils/apiservice'
+import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlutils'
 
 const generatedImages = ref([])
 const errorMessage = ref('')

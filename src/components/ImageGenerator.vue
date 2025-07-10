@@ -190,7 +190,7 @@ import {
   Expand,
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
-import apiClient from '../utils/apiClient.js'
+import apiClient from '@/utils/apiClient'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({

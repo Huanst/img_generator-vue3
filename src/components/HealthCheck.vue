@@ -51,8 +51,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
-import { healthAPI } from '../utils/apiservice.js'
-import { API_BASE_URL } from '../utils/urlutils.js'
+import { healthAPI } from '@/utils/apiservice'
+import { API_BASE_URL } from '@/utils/urlutils'
 import { ElMessage } from 'element-plus'
 
 const checking = ref(false)

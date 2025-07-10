@@ -109,8 +109,8 @@ import { ref, reactive } from 'vue'
 import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
-import { userActions } from '../utils/userStore.js'
-import { authAPI, userAPI } from '../utils/apiservice.js'
+import { userActions } from '@/utils/userStore'
+import { authAPI, userAPI } from '@/utils/apiservice'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({

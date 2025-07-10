@@ -78,8 +78,8 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { userState } from '../utils/userStore.js'
-import { API_SERVER_URL } from '../utils/urlutils.js'
+import { userState } from '@/utils/userStore'
+import { API_SERVER_URL } from '@/utils/urlutils'
 
 /**
  * 测试结果数据
