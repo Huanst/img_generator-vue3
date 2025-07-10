@@ -42,7 +42,14 @@ jobs:
           # 获取完整的提交历史，用于版本标记
           fetch-depth: 0
 
-      # 2. 设置 Node.js 环境
+      # 2. 设置 pnpm 包管理器（必须在 Node.js 之前）
+      - name: 📋 设置 pnpm 包管理器
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      # 3. 设置 Node.js 环境
       - name: 🔧 设置 Node.js 环境
         uses: actions/setup-node@v4
         with:
@@ -51,20 +58,33 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'pnpm-lock.yaml'
 
-      # 3. 设置 pnpm 包管理器
-      - name: 📋 设置 pnpm 包管理器
-        uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
-          run_install: false
+      # 4. 验证 pnpm 安装
+      - name: ✅ 验证 pnpm 安装
+        shell: bash
+        run: |
+          echo "验证 pnpm 安装状态..."
+          which pnpm || {
+            echo "❌ 错误: pnpm 未找到"
+            echo "尝试重新安装 pnpm..."
+            npm install -g pnpm@${{ env.PNPM_VERSION }}
+          }
+          
+          echo "pnpm 版本信息:"
+          pnpm --version
+          
+          echo "pnpm 安装路径:"
+          which pnpm
 
-      # 4. 获取 pnpm 缓存目录
+      # 5. 获取 pnpm 缓存目录
       - name: 🗂️ 获取 pnpm 缓存目录
         shell: bash
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+          echo "获取 pnpm 缓存目录..."
+          STORE_PATH=$(pnpm store path --silent)
+          echo "pnpm 缓存路径: $STORE_PATH"
+          echo "STORE_PATH=$STORE_PATH" >> $GITHUB_ENV
 
-      # 5. 设置 pnpm 缓存
+      # 6. 设置 pnpm 缓存
       - name: 🚀 设置 pnpm 缓存
         uses: actions/cache@v4
         with:
@@ -73,44 +93,89 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      # 6. 安装项目依赖
+      # 7. 安装项目依赖
       - name: 📥 安装项目依赖
+        shell: bash
         run: |
           echo "开始安装依赖..."
-          pnpm install --frozen-lockfile --prefer-offline
-          echo "依赖安装完成"
+          
+          # 检查 pnpm-lock.yaml 是否存在
+          if [ ! -f "pnpm-lock.yaml" ]; then
+            echo "⚠️ 警告: pnpm-lock.yaml 不存在，将生成新的锁定文件"
+            pnpm install
+          else
+            echo "使用 pnpm-lock.yaml 安装依赖"
+            pnpm install --frozen-lockfile --prefer-offline
+          fi
+          
+          echo "✅ 依赖安装完成"
+          echo "已安装的包数量: $(pnpm list --depth=0 2>/dev/null | wc -l)"
 
-      # 7. 代码质量检查（可选）
+      # 8. 代码质量检查（可选）
       - name: 🔍 代码质量检查
+        shell: bash
         run: |
           echo "执行代码检查..."
-          # 如果项目中有 lint 脚本，取消注释下面的行
-          # pnpm run lint
-          echo "代码检查完成"
+          
+          # 检查是否有 lint 脚本
+          if pnpm run --if-present lint --dry-run 2>/dev/null; then
+            echo "运行 ESLint 检查..."
+            pnpm run lint
+          else
+            echo "未找到 lint 脚本，跳过代码检查"
+          fi
+          
+          echo "✅ 代码检查完成"
 
-      # 8. 构建项目
+      # 9. 构建项目
       - name: 🏗️ 构建 Vue3 项目
+        shell: bash
         run: |
-          echo "开始构建项目..."
-          pnpm run build
-          echo "项目构建完成"
-          
-          # 显示构建产物信息
-          echo "构建产物大小："
-          du -sh ${{ env.BUILD_PATH }}
-          
-          echo "构建产物列表："
-          ls -la ${{ env.BUILD_PATH }}
+           echo "开始构建项目..."
+           
+           # 检查构建脚本是否存在
+           if ! pnpm run --if-present build --dry-run 2>/dev/null; then
+             echo "❌ 错误: 未找到 build 脚本"
+             echo "请确保 package.json 中包含 build 脚本"
+             exit 1
+           fi
+           
+           # 执行构建
+           pnpm run build
+           
+           # 检查构建产物是否存在
+           if [ ! -d "${{ env.BUILD_PATH }}" ]; then
+             echo "❌ 错误: 构建目录不存在: ${{ env.BUILD_PATH }}"
+             exit 1
+           fi
+           
+           echo "✅ 项目构建完成"
+           
+           # 显示构建产物信息
+           echo "构建产物大小："
+           du -sh ${{ env.BUILD_PATH }}
+           
+           echo "构建产物列表："
+           ls -la ${{ env.BUILD_PATH }}
 
-      # 9. 压缩构建产物（可选，减少传输时间）
+      # 10. 压缩构建产物（减少传输时间）
       - name: 📦 压缩构建产物
+        shell: bash
         run: |
           echo "压缩构建产物..."
+          
+          # 创建压缩包
           tar -czf build-${{ github.sha }}.tar.gz -C ${{ env.BUILD_PATH }} .
-          echo "压缩完成，文件大小："
+          
+          echo "✅ 压缩完成"
+          echo "压缩包大小："
           ls -lh build-${{ github.sha }}.tar.gz
+          
+          # 验证压缩包内容
+          echo "压缩包内容预览："
+          tar -tzf build-${{ github.sha }}.tar.gz | head -10
 
-      # 10. 部署文件到服务器
+      # 11. 部署文件到服务器
       - name: 🚀 部署文件到云服务器
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -122,7 +187,7 @@ jobs:
           target: "/tmp/"
           timeout: 300s
 
-      # 11. 在服务器上执行部署脚本
+      # 12. 在服务器上执行部署脚本
       - name: 🔄 执行服务器部署脚本
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -192,7 +257,7 @@ jobs:
             echo "Git 提交: ${{ github.sha }}"
             echo "部署路径: $DEPLOY_PATH"
 
-      # 12. 部署状态通知（可选）
+      # 13. 部署状态通知（可选）
       - name: 📢 发送部署通知
         if: always()
         run: |
