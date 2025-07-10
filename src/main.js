@@ -5,7 +5,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import axios from 'axios'
 import './style.css'
-import { API_BASE_URL } from '@/utils/urlutils'
+import { API_BASE_URL } from '@/utils/urlutils.js'
 
 // 输出环境信息
 console.log('应用环境:', import.meta.env.MODE)
