@@ -1,53 +1,210 @@
-# .github/workflows/deploy.yml
-name: Deploy Website
+# GitHub Actions 自动化部署配置文件
+# 用于将 Vue3 项目自动构建并部署到云服务器
+name: Deploy Vue3 App to Cloud Server
 
+# 触发条件：当推送到 main 分支时自动执行
 on:
   push:
     branches:
       - main
+  # 支持手动触发部署
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署环境'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+# 环境变量配置
+env:
+  NODE_VERSION: '22.17.0'
+  PNPM_VERSION: '10.12.4'
+  BUILD_PATH: 'dist'
 
 jobs:
+  # 构建和部署任务
   build-and-deploy:
+    name: 构建并部署到云服务器
     runs-on: ubuntu-latest
-
+    
+    # 设置超时时间（30分钟）
+    timeout-minutes: 30
+    
     steps:
-      - name: Checkout code
+      # 1. 检出代码
+      - name: 📦 检出代码仓库
         uses: actions/checkout@v4
+        with:
+          # 获取完整的提交历史，用于版本标记
+          fetch-depth: 0
 
-      - name: Setup Node.js
+      # 2. 设置 Node.js 环境
+      - name: 🔧 设置 Node.js 环境
         uses: actions/setup-node@v4
         with:
-          node-version: 'v22.17.0'
-          # cache: 'pnpm' # 这里的缓存仍然是针对依赖的，而不是 pnpm 本身
+          node-version: ${{ env.NODE_VERSION }}
+          # 启用依赖缓存以加速构建
+          cache: 'pnpm'
+          cache-dependency-path: 'pnpm-lock.yaml'
 
-      # 新增的步骤：使用 pnpm 官方 action 设置 pnpm
-      - name: Setup pnpm
+      # 3. 设置 pnpm 包管理器
+      - name: 📋 设置 pnpm 包管理器
         uses: pnpm/action-setup@v3
         with:
-          version: 10.12.4 # 推荐指定 pnpm 的版本，例如 8
-          run_install: false # 不要在这一步自动运行 pnpm install，我们后面会有专门的步骤
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+      # 4. 获取 pnpm 缓存目录
+      - name: 🗂️ 获取 pnpm 缓存目录
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Build project
-        run: pnpm build
+      # 5. 设置 pnpm 缓存
+      - name: 🚀 设置 pnpm 缓存
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
-      - name: Deploy files to Server
-        uses: appleboy/scp-action@master
+      # 6. 安装项目依赖
+      - name: 📥 安装项目依赖
+        run: |
+          echo "开始安装依赖..."
+          pnpm install --frozen-lockfile --prefer-offline
+          echo "依赖安装完成"
+
+      # 7. 代码质量检查（可选）
+      - name: 🔍 代码质量检查
+        run: |
+          echo "执行代码检查..."
+          # 如果项目中有 lint 脚本，取消注释下面的行
+          # pnpm run lint
+          echo "代码检查完成"
+
+      # 8. 构建项目
+      - name: 🏗️ 构建 Vue3 项目
+        run: |
+          echo "开始构建项目..."
+          pnpm run build
+          echo "项目构建完成"
+          
+          # 显示构建产物信息
+          echo "构建产物大小："
+          du -sh ${{ env.BUILD_PATH }}
+          
+          echo "构建产物列表："
+          ls -la ${{ env.BUILD_PATH }}
+
+      # 9. 压缩构建产物（可选，减少传输时间）
+      - name: 📦 压缩构建产物
+        run: |
+          echo "压缩构建产物..."
+          tar -czf build-${{ github.sha }}.tar.gz -C ${{ env.BUILD_PATH }} .
+          echo "压缩完成，文件大小："
+          ls -lh build-${{ github.sha }}.tar.gz
+
+      # 10. 部署文件到服务器
+      - name: 🚀 部署文件到云服务器
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "dist/"
-          target: ${{ secrets.DEPLOY_PATH }}
-          strip_components: 1
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "build-${{ github.sha }}.tar.gz"
+          target: "/tmp/"
+          timeout: 300s
 
-      - name: Execute post-deployment commands on Server (Optional)
-        uses: appleboy/ssh-action@master
+      # 11. 在服务器上执行部署脚本
+      - name: 🔄 执行服务器部署脚本
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 300s
           script: |
-            echo "部署完成，服务器端操作已执行。"
+            set -e  # 遇到错误立即退出
+            
+            echo "=== 开始部署流程 ==="
+            
+            # 设置变量
+            DEPLOY_PATH="${{ secrets.DEPLOY_PATH }}"
+            BACKUP_PATH="${{ secrets.BACKUP_PATH || '/var/backups/webapp' }}"
+            BUILD_FILE="/tmp/build-${{ github.sha }}.tar.gz"
+            
+            echo "部署路径: $DEPLOY_PATH"
+            echo "备份路径: $BACKUP_PATH"
+            
+            # 创建必要的目录
+            sudo mkdir -p "$DEPLOY_PATH"
+            sudo mkdir -p "$BACKUP_PATH"
+            
+            # 备份当前版本（如果存在）
+            if [ -d "$DEPLOY_PATH" ] && [ "$(ls -A $DEPLOY_PATH)" ]; then
+              echo "备份当前版本..."
+              BACKUP_NAME="backup-$(date +%Y%m%d-%H%M%S)"
+              sudo tar -czf "$BACKUP_PATH/$BACKUP_NAME.tar.gz" -C "$DEPLOY_PATH" . || echo "备份失败，继续部署"
+              
+              # 保留最近5个备份
+              cd "$BACKUP_PATH"
+              sudo ls -t backup-*.tar.gz 2>/dev/null | tail -n +6 | sudo xargs rm -f || true
+            fi
+            
+            # 清理旧文件
+            echo "清理部署目录..."
+            sudo rm -rf "$DEPLOY_PATH"/*
+            
+            # 解压新版本
+            echo "部署新版本..."
+            sudo tar -xzf "$BUILD_FILE" -C "$DEPLOY_PATH"
+            
+            # 设置文件权限
+            echo "设置文件权限..."
+            sudo chown -R www-data:www-data "$DEPLOY_PATH" || sudo chown -R nginx:nginx "$DEPLOY_PATH" || echo "权限设置可能需要手动调整"
+            sudo chmod -R 755 "$DEPLOY_PATH"
+            
+            # 重启相关服务（根据实际情况调整）
+            echo "重启 Web 服务..."
+            sudo systemctl reload nginx || sudo service nginx reload || echo "Nginx 重启失败，请手动检查"
+            
+            # 清理临时文件
+            echo "清理临时文件..."
+            rm -f "$BUILD_FILE"
+            
+            # 健康检查（可选）
+            echo "执行健康检查..."
+            if [ ! -z "${{ secrets.HEALTH_CHECK_URL }}" ]; then
+              sleep 5  # 等待服务启动
+              curl -f "${{ secrets.HEALTH_CHECK_URL }}" || echo "健康检查失败，请手动验证"
+            fi
+            
+            echo "=== 部署完成 ==="
+            echo "部署时间: $(date)"
+            echo "Git 提交: ${{ github.sha }}"
+            echo "部署路径: $DEPLOY_PATH"
+
+      # 12. 部署状态通知（可选）
+      - name: 📢 发送部署通知
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 部署成功！"
+            echo "🔗 提交: ${{ github.sha }}"
+            echo "🌐 分支: ${{ github.ref_name }}"
+            echo "⏰ 时间: $(date)"
+          else
+            echo "❌ 部署失败！"
+            echo "请检查日志并修复问题"
+          fi
+          
+          # 如果配置了通知 Webhook，可以在这里发送通知
+          # curl -X POST "${{ secrets.NOTIFICATION_WEBHOOK }}" -d '{"status": "${{ job.status }}", "commit": "${{ github.sha }}"}'

@@ -5,6 +5,8 @@ import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
+import HistoryModal from './components/HistoryModal.vue'
+import ImageLoadTest from './components/ImageLoadTest.vue'
 import { userState, userActions } from './utils/userStore'
 import { healthAPI } from './utils/apiservice'
 import { API_BASE_URL, API_SERVER_URL } from './utils/urlutils'
@@ -14,6 +16,8 @@ const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
 const currentPage = ref('login') // 当前页面: login, register, main, profile, debug
 const showUserMenu = ref(false) // 控制用户菜单显示
+const showHistoryModal = ref(false) // 控制历史记录模态框显示
+const showImageTestModal = ref(false) // 控制图片测试工具模态框显示
 const defaultAvatarUrl = ref('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0idXJsKCNncmFkaWVudCkiLz4KICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjE2IiByPSI2IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45Ii8+CiAgPHBhdGggZD0iTTggMzJjMC02LjYyNyA1LjM3My0xMiAxMi0xMnMxMiA1LjM3MyAxMiAxMiIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuOSIvPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM1MzUyZWQ7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwYzlmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgo8L3N2Zz4=')
 
 // 使用用户状态管理（保持响应性）
@@ -142,6 +146,33 @@ const handleSettings = () => {
   // 这里可以添加设置页面的逻辑
   console.log('打开设置')
   showUserMenu.value = false
+}
+
+/**
+ * 处理历史记录按钮点击事件
+ * 显示用户的图像生成历史记录
+ */
+const handleHistory = () => {
+  showHistoryModal.value = true
+}
+
+// 关闭历史记录模态框
+const handleCloseHistory = () => {
+  showHistoryModal.value = false
+}
+
+/**
+ * 处理图片测试按钮点击
+ */
+const handleImageTest = () => {
+  showImageTestModal.value = true
+}
+
+/**
+ * 关闭图片测试模态框
+ */
+const handleCloseImageTest = () => {
+  showImageTestModal.value = false
 }
 
 // 获取用户头像URL（计算属性，确保响应式更新）
@@ -349,6 +380,16 @@ const clearGeneratedImages = () => {
       <template v-else-if="currentPage === 'main' && userState.isLoggedIn">
         <header class="app-header">
           <div class="user-info">
+            <!-- 历史记录按钮 -->
+            <div class="history-button-container">
+              <button class="history-button" @click="handleHistory" title="历史记录">
+                <i class="icon-history"></i>
+              </button>
+              <button class="test-button" @click="handleImageTest" title="图片测试工具">
+                <i class="icon-test">🔧</i>
+              </button>
+            </div>
+            
             <div class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
               <div class="user-avatar">
                 <img :src="userAvatarUrl" 
@@ -418,6 +459,19 @@ const clearGeneratedImages = () => {
             </transition>
           </div>
         </main>
+
+        <!-- 历史记录模态框 -->
+        <history-modal
+          v-if="showHistoryModal"
+          @close="handleCloseHistory" />
+        
+        <!-- 图片测试工具模态框 -->
+        <div v-if="showImageTestModal" class="modal-overlay" @click="handleCloseImageTest">
+          <div class="modal-container" @click.stop>
+            <button class="modal-close" @click="handleCloseImageTest">×</button>
+            <ImageLoadTest />
+          </div>
+        </div>
 
         <footer class="app-footer" style="margin-top: auto;">
           <p>
@@ -767,12 +821,108 @@ body {
   margin: 8px 0;
 }
 
+/* 历史记录按钮样式 */
+.history-button-container {
+  position: relative;
+  z-index: 1001;
+  display: flex;
+  gap: 10px;
+}
+
+.history-button,
+.test-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  border: 2px solid var(--accent-color);
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.history-button:hover,
+.test-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+}
+
+.history-button:active,
+.test-button:active {
+  transform: scale(0.95);
+}
+
+/* 模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-container {
+  position: relative;
+  background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-color);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
 /* 图标样式 */
 .icon-user::before { content: '👤'; }
 .icon-settings::before { content: '⚙️'; }
 .icon-sun::before { content: '☀️'; }
 .icon-moon::before { content: '🌙'; }
 .icon-logout::before { content: '🚪'; }
+.icon-history::before { content: '📋'; }
+
+/* 历史记录按钮图标样式 */
+.history-button .icon-history {
+  font-style: normal;
+  font-size: 18px;
+  line-height: 1;
+}
 
 /* 菜单动画 */
 .menu-fade-enter-active,
