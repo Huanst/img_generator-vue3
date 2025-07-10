@@ -118,7 +118,7 @@ jobs:
           echo "执行代码检查..."
           
           # 检查是否有 lint 脚本
-          if pnpm run --if-present lint --dry-run 2>/dev/null; then
+          if grep -q '"lint"' package.json; then
             echo "运行 ESLint 检查..."
             pnpm run lint
           else
@@ -134,10 +134,13 @@ jobs:
            echo "开始构建项目..."
            
            # 检查构建脚本是否存在
-           if ! pnpm run --if-present build --dry-run 2>/dev/null; then
-             echo "❌ 错误: 未找到 build 脚本"
-             echo "请确保 package.json 中包含 build 脚本"
-             exit 1
+           if ! pnpm run --if-present build --help 2>/dev/null | grep -q "build"; then
+             # 使用更简单的方法检查 package.json 中是否有 build 脚本
+             if ! grep -q '"build"' package.json; then
+               echo "❌ 错误: 未找到 build 脚本"
+               echo "请确保 package.json 中包含 build 脚本"
+               exit 1
+             fi
            fi
            
            # 执行构建
