@@ -60,7 +60,7 @@ jobs:
 
       # 4. 验证 pnpm 安装
       - name: ✅ 验证 pnpm 安装
-        shell: bash
+        shell: zsh
         run: |
           echo "验证 pnpm 安装状态..."
           which pnpm || {
@@ -77,7 +77,7 @@ jobs:
 
       # 5. 获取 pnpm 缓存目录
       - name: 🗂️ 获取 pnpm 缓存目录
-        shell: bash
+        shell: zsh
         run: |
           echo "获取 pnpm 缓存目录..."
           STORE_PATH=$(pnpm store path --silent)
@@ -95,7 +95,7 @@ jobs:
 
       # 7. 安装项目依赖
       - name: 📥 安装项目依赖
-        shell: bash
+        shell: zsh
         run: |
           echo "开始安装依赖..."
           
@@ -113,7 +113,7 @@ jobs:
 
       # 8. 构建项目
       - name: 🏗️ 构建 Vue3 项目
-        shell: bash
+        shell: zsh
         run: |
            echo "开始构建项目..."
            
@@ -147,7 +147,7 @@ jobs:
 
       # 9. 压缩构建产物（减少传输时间）
       - name: 📦 压缩构建产物
-        shell: bash
+        shell: zsh
         run: |
           echo "压缩构建产物..."
           
@@ -247,6 +247,7 @@ jobs:
       # 12. 部署状态通知（可选）
       - name: 📢 发送部署通知
         if: always()
+        shell: zsh
         run: |
           if [ "${{ job.status }}" == "success" ]; then
             echo "✅ 部署成功！"
