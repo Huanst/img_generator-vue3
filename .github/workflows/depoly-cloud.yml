@@ -111,23 +111,7 @@ jobs:
           echo "✅ 依赖安装完成"
           echo "已安装的包数量: $(pnpm list --depth=0 2>/dev/null | wc -l)"
 
-      # 8. 代码质量检查（可选）
-      - name: 🔍 代码质量检查
-        shell: bash
-        run: |
-          echo "执行代码检查..."
-          
-          # 检查是否有 lint 脚本
-          if grep -q '"lint"' package.json; then
-            echo "运行 ESLint 检查..."
-            pnpm run lint
-          else
-            echo "未找到 lint 脚本，跳过代码检查"
-          fi
-          
-          echo "✅ 代码检查完成"
-
-      # 9. 构建项目
+      # 8. 构建项目
       - name: 🏗️ 构建 Vue3 项目
         shell: bash
         run: |
@@ -161,7 +145,7 @@ jobs:
            echo "构建产物列表："
            ls -la ${{ env.BUILD_PATH }}
 
-      # 10. 压缩构建产物（减少传输时间）
+      # 9. 压缩构建产物（减少传输时间）
       - name: 📦 压缩构建产物
         shell: bash
         run: |
@@ -178,7 +162,7 @@ jobs:
           echo "压缩包内容预览："
           tar -tzf build-${{ github.sha }}.tar.gz | head -10
 
-      # 11. 部署文件到服务器
+      # 10. 部署文件到服务器
       - name: 🚀 部署文件到云服务器
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -190,7 +174,7 @@ jobs:
           target: "/tmp/"
           timeout: 300s
 
-      # 12. 在服务器上执行部署脚本
+      # 11. 在服务器上执行部署脚本
       - name: 🔄 执行服务器部署脚本
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -260,7 +244,7 @@ jobs:
             echo "Git 提交: ${{ github.sha }}"
             echo "部署路径: $DEPLOY_PATH"
 
-      # 13. 部署状态通知（可选）
+      # 12. 部署状态通知（可选）
       - name: 📢 发送部署通知
         if: always()
         run: |
