@@ -1091,9 +1091,28 @@ body {
 
 /* 小屏幕手机 */
 @media (max-width: 480px) {
+  .app-container {
+    padding: 8px;
+  }
+
   .app-header {
-    padding: 325px 0 15px 0;
-    height: 365px;
+    padding: 280px 0 12px 0;
+    height: 320px;
+    text-align: center;
+  }
+
+  .app-title {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+
+  .app-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+
+  .user-section {
+    gap: 8px;
   }
 
   .user-avatar {
@@ -1102,11 +1121,28 @@ body {
     border-width: 1px;
   }
 
+  .history-button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 16px;
+    min-height: 32px;
+  }
+
+  .history-text {
+    font-size: 12px;
+  }
+
   .user-dropdown-menu {
     top: 35px;
     right: 0;
-    min-width: 180px;
+    min-width: 160px;
     z-index: 1002;
+    font-size: 13px;
+  }
+
+  .menu-item {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 
   .user-avatar-container {
@@ -1114,8 +1150,54 @@ body {
   }
 
   .user-info {
+    gap: 6px;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+
+  .guest-actions {
     gap: 8px;
-    padding: 0 5px;
+  }
+
+  .login-btn,
+  .register-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    min-height: 36px;
+    border-radius: 18px;
+  }
+
+  .content-container {
+    padding: 12px 8px;
+  }
+
+  .app-sections {
+    gap: 16px;
+  }
+
+  .app-main {
+    margin-bottom: 50px;
+    padding-bottom: 200px;
+  }
+
+  .app-footer {
+    padding: 8px 0;
+    font-size: 12px;
+  }
+
+  .footer-powered {
+    font-size: 11px;
+  }
+
+  /* 优化模态框 */
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  /* 优化卡片间距 */
+  .glassmorphic-card {
+    margin: 0 4px;
+    border-radius: 16px;
   }
 }
 
@@ -1285,5 +1367,131 @@ body {
   );
   z-index: -1;
   opacity: 0.5;
+}
+
+/* 移动端全局优化 */
+@media (max-width: 768px) {
+  /* 优化触摸目标大小 */
+  button, .el-button, .action-btn, .menu-item {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 优化输入框 */
+  input, textarea, .el-input__inner, .el-textarea__inner {
+    font-size: 16px !important; /* 防止iOS自动缩放 */
+  }
+
+  /* 优化选择器 */
+  .el-select .el-input__inner {
+    font-size: 16px !important;
+  }
+
+  /* 优化滚动性能 */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 优化点击反馈 */
+  button, .el-button, .action-btn {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* 优化文本选择 */
+  .user-select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* 优化长按菜单 */
+  img {
+    -webkit-touch-callout: none;
+  }
+
+  /* 优化焦点样式 */
+  *:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* 优化模态框在移动端的显示 */
+  .el-dialog, .modal-overlay {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .el-dialog__body {
+    padding: 15px;
+  }
+
+  /* 优化表单间距 */
+  .el-form-item {
+    margin-bottom: 16px;
+  }
+
+  .el-form-item__label {
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  /* 优化加载状态 */
+  .el-loading-mask {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .el-loading-spinner {
+    font-size: 32px;
+  }
+
+  /* 优化消息提示 */
+  .el-message {
+    min-width: 280px;
+    max-width: calc(100vw - 32px);
+    margin: 0 16px;
+  }
+
+  /* 优化下拉菜单 */
+  .el-dropdown-menu {
+    max-width: calc(100vw - 32px);
+  }
+
+  /* 优化图片预览 */
+  .el-image-viewer__wrapper {
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+
+  .el-image-viewer__canvas {
+    padding: 20px;
+  }
+
+  /* 优化分页器 */
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .el-pagination .el-pager li {
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+  }
+
+  /* 优化表格 */
+  .el-table {
+    font-size: 14px;
+  }
+
+  .el-table th,
+  .el-table td {
+    padding: 8px 4px;
+  }
 }
 </style>

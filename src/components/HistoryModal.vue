@@ -828,22 +828,137 @@ onMounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 响应式设计 */
+/* 小屏幕手机优化 */
+@media (max-width: 480px) {
+  .history-modal {
+    width: 98%;
+    max-height: 90vh;
+    border-radius: 12px;
+  }
+
+  .modal-header {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+    margin: 0;
+  }
+
+  .close-button {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .modal-content {
+    padding: 12px;
+  }
+
+  .history-item {
+    padding: 10px;
+    border-radius: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .image-preview {
+    width: 100%;
+    height: 120px;
+    border-radius: 6px;
+  }
+
+  .item-info {
+    width: 100%;
+  }
+
+  .prompt-text {
+    font-size: 0.8rem;
+    line-height: 1.3;
+    -webkit-line-clamp: 2;
+  }
+
+  .created-time {
+    font-size: 0.7rem;
+  }
+
+  .item-actions {
+    width: 100%;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .action-button {
+    padding: 8px 12px;
+    font-size: 12px;
+    min-width: 70px;
+    min-height: 36px;
+    border-radius: 6px;
+    flex: 1;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .page-button {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .page-info {
+    font-size: 12px;
+  }
+
+  /* 优化空状态 */
+  .empty-container {
+    padding: 20px;
+  }
+
+  .empty-message {
+    font-size: 16px;
+  }
+
+  .empty-hint {
+    font-size: 12px;
+  }
+}
+
+/* 中等屏幕手机和小平板优化 */
 @media (max-width: 768px) {
   .history-modal {
     width: 95%;
-    max-height: 90vh;
+    max-height: 85vh;
   }
   
   .modal-header {
-    padding: 16px 20px;
+    padding: 15px 20px;
+  }
+  
+  .modal-title {
+    font-size: 1.1rem;
+  }
+  
+  .close-button {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
   
   .modal-content {
-    padding: 20px;
+    padding: 15px;
   }
   
   .history-item {
+    padding: 12px;
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
@@ -851,12 +966,32 @@ onMounted(() => {
   
   .image-preview {
     width: 100%;
-    height: 200px;
+    height: 180px;
+  }
+  
+  .item-info {
+    width: 100%;
+  }
+  
+  .prompt-text {
+    font-size: 0.85rem;
+  }
+  
+  .created-time {
+    font-size: 0.75rem;
   }
   
   .item-actions {
     width: 100%;
     justify-content: center;
+    gap: 8px;
+  }
+  
+  .action-button {
+    padding: 8px 12px;
+    font-size: 13px;
+    min-width: 65px;
+    min-height: 40px;
   }
   
   .pagination {

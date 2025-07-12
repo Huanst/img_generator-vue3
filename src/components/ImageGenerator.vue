@@ -900,10 +900,117 @@ watch([width, height], () => {
   justify-content: center;
 }
 
+/* 小屏幕手机优化 */
+@media (max-width: 480px) {
+  .generator-header {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .generator-title {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+
+  .header-actions {
+    gap: 12px;
+  }
+
+  .tech-icon-container {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tech-icon {
+    font-size: 18px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+
+  .form-item-col {
+    margin-bottom: 12px;
+  }
+
+  .custom-size-inputs {
+    gap: 6px;
+  }
+
+  .size-input {
+    width: 80px;
+  }
+
+  .generate-btn {
+    max-width: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  .slider-container {
+    margin: 8px 0;
+  }
+
+  .options-title {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .additional-options {
+    margin-bottom: 16px;
+  }
+
+  /* 优化文本输入框在小屏幕上的显示 */
+  .fixed-height-textarea :deep(.el-textarea__inner) {
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 10px;
+  }
+
+  /* 优化选择器在小屏幕上的显示 */
+  :deep(.el-select) {
+    width: 100%;
+  }
+
+  :deep(.el-select .el-input__inner) {
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 0 12px;
+  }
+
+  /* 优化数字输入框 */
+  .number-control {
+    padding: 6px;
+  }
+
+  .number-display {
+    font-size: 18px;
+    min-width: 50px;
+  }
+
+  /* 优化滑块 */
+  .guidance-scale-slider,
+  .steps-slider {
+    width: calc(100% - 50px);
+  }
+
+  .slider-value {
+    min-width: 40px;
+    font-size: 16px;
+  }
+}
+
+/* 中等屏幕手机和小平板优化 */
 @media (max-width: 768px) {
   .form-row {
     flex-direction: column;
     gap: 0;
+    margin-bottom: 14px;
   }
 
   .generator-title {
@@ -912,6 +1019,43 @@ watch([width, height], () => {
 
   .generate-btn {
     max-width: none;
+    padding: 14px 24px;
+    font-size: 16px;
+  }
+
+  .form-item-col {
+    margin-bottom: 14px;
+  }
+
+  .custom-size-inputs {
+    gap: 8px;
+  }
+
+  .size-input {
+    width: 90px;
+  }
+
+  /* 优化触摸目标大小 */
+  :deep(.el-button) {
+    min-height: 44px;
+  }
+
+  :deep(.el-input__inner) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  :deep(.el-select .el-input__inner) {
+    min-height: 44px;
+  }
+
+  /* 优化间距 */
+  .additional-options {
+    margin-bottom: 18px;
+  }
+
+  .slider-container {
+    margin: 12px 0;
   }
 }
 

@@ -756,15 +756,117 @@ const closeResultPanel = () => {
   justify-content: center;
 }
 
-/* 移动端适配 */
+/* 小屏幕手机优化 */
+@media (max-width: 480px) {
+  .results-container {
+    width: 100%;
+    height: auto;
+    padding: 0;
+  }
+
+  .result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .result-title {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .download-all-btn {
+    padding: 10px 16px;
+    font-size: 14px;
+    min-height: 44px;
+    border-radius: 8px;
+  }
+
+  .close-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .result-stats {
+    padding: 6px;
+    gap: 8px;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+
+  .stat-item {
+    min-width: auto;
+    flex: 1;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-size: 0.9rem;
+    min-height: 28px;
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+  }
+
+  .image-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .image-number {
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
+    top: 4px;
+    left: 4px;
+  }
+
+  .image-actions {
+    transform: translateY(0);
+    opacity: 0.95;
+    padding: 4px;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .action-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 14px;
+    border-radius: 6px;
+    flex: 1;
+  }
+
+  .tip-text {
+    font-size: 0.7rem;
+    margin-top: 10px;
+    padding: 0 6px;
+    line-height: 1.3;
+  }
+}
+
+/* 中等屏幕手机和小平板优化 */
 @media (max-width: 768px) {
   .results-container {
     width: 100%;
     height: auto;
-    padding: 0; /* 移除内边距 */
+    padding: 0;
   }
 
   .result-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
     margin-bottom: 12px;
   }
 
@@ -772,9 +874,22 @@ const closeResultPanel = () => {
     font-size: 1.1rem;
   }
 
+  .header-actions {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
   .download-all-btn {
-    padding: 6px 10px;
-    font-size: 0.9rem;
+    padding: 8px 14px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+
+  .close-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
   }
 
   .result-stats {
@@ -782,6 +897,7 @@ const closeResultPanel = () => {
     gap: 12px;
     margin-bottom: 12px;
     align-items: flex-end;
+    font-size: 0.85rem;
   }
 
   .stat-item {
@@ -798,8 +914,8 @@ const closeResultPanel = () => {
   }
 
   .image-grid {
-    grid-template-columns: repeat(2, 1fr); /* 固定两列布局 */
-    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 12px;
   }
 
   .image-number {
@@ -813,30 +929,21 @@ const closeResultPanel = () => {
   .image-actions {
     transform: translateY(0);
     opacity: 0.95;
-    padding: 6px;
+    padding: 8px;
     gap: 6px;
   }
 
   .action-btn {
-    width: 28px;
-    height: 28px;
-    font-size: 0.9em;
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+    min-height: 40px;
   }
 
   .tip-text {
     font-size: 0.8rem;
     margin-top: 12px;
     padding: 0 8px;
-  }
-
-  .close-btn {
-    width: 32px;
-    height: 32px;
-    font-size: 12px;
-  }
-
-  .header-actions {
-    gap: 6px;
   }
 }
 
