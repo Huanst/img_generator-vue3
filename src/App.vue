@@ -6,18 +6,19 @@ import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
 import HistoryModal from './components/HistoryModal.vue'
-import ImageLoadTest from './components/ImageLoadTest.vue'
+
 import { userState, userActions } from '@/utils/userStore'
-import { healthAPI } from '@/utils/apiservice'
-import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlutils'
+import { healthAPI } from '@/utils/apiService'
+import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlUtils'
+import { ElMessage } from 'element-plus'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
-const currentPage = ref('login') // 当前页面: login, register, main, profile, debug
+const currentPage = ref('main') // 当前页面: login, register, main, profile, debug
 const showUserMenu = ref(false) // 控制用户菜单显示
 const showHistoryModal = ref(false) // 控制历史记录模态框显示
-const showImageTestModal = ref(false) // 控制图片测试工具模态框显示
+
 const defaultAvatarUrl = ref('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0idXJsKCNncmFkaWVudCkiLz4KICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjE2IiByPSI2IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45Ii8+CiAgPHBhdGggZD0iTTggMzJjMC02LjYyNyA1LjM3My0xMiAxMi0xMnMxMiA1LjM3MyAxMiAxMiIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuOSIvPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM1MzUyZWQ7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwYzlmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgo8L3N2Zz4=')
 
 // 使用用户状态管理（保持响应性）
@@ -64,7 +65,7 @@ const setupThemeListener = () => {
 
 // 全局错误处理
 const handleGlobalError = event => {
-  console.error('全局错误:', event.error || event.message || '未知错误')
+  // console.error('全局错误:', event.error || event.message || '未知错误')
   if (event.error && event.error.message) {
     errorMessage.value = `浏览器错误: ${event.error.message}`
   }
@@ -72,7 +73,7 @@ const handleGlobalError = event => {
 
 // 全局Promise错误处理
 const handleUnhandledRejection = event => {
-  console.error('未处理的Promise错误:', event.reason)
+  // console.error('未处理的Promise错误:', event.reason)
   if (event.reason && event.reason.message) {
     errorMessage.value = `Promise错误: ${event.reason.message}`
   }
@@ -91,18 +92,22 @@ const handleMouseMove = e => {
 
 // 用户登录成功处理
 const handleLogin = async userData => {
-  console.log('登录成功，用户数据:', userData)
+  // console.log('登录成功，用户数据:', userData)
+  
+  // 清空未登录时生成的图片数据
+  clearGeneratedImages()
+  
   currentPage.value = 'main'
   
   // 用户状态已在userActions.login中更新
   // 添加小延迟确保DOM更新完成后再刷新用户信息
   setTimeout(async () => {
     try {
-      console.log('开始刷新用户信息...')
+      // console.log('开始刷新用户信息...')
       const result = await userActions.getUserProfile()
-      console.log('用户信息刷新结果:', result)
+      // console.log('用户信息刷新结果:', result)
     } catch (error) {
-      console.error('刷新用户信息失败:', error)
+      // console.error('刷新用户信息失败:', error)
     }
   }, 100)
 }
@@ -110,7 +115,7 @@ const handleLogin = async userData => {
 // 处理注册成功后的逻辑
 const handleRegisterSuccess = data => {
   // 这里可以保存一些注册信息
-  console.log('注册成功:', data)
+  // console.log('注册成功:', data)
 }
 
 // 切换到登录页面
@@ -125,6 +130,9 @@ const goToRegister = () => {
 
 // 用户登出
 const handleLogout = () => {
+  // 清空生成的图片数据
+  clearGeneratedImages()
+  
   userActions.logout()
   currentPage.value = 'login'
   showUserMenu.value = false
@@ -141,10 +149,20 @@ const handleBackFromProfile = () => {
   currentPage.value = 'main'
 }
 
+// 从登录页面返回主页面
+const handleBackFromLogin = () => {
+  currentPage.value = 'main'
+}
+
+// 从注册页面返回主页面
+const handleBackFromRegister = () => {
+  currentPage.value = 'main'
+}
+
 // 处理设置
 const handleSettings = () => {
   // 这里可以添加设置页面的逻辑
-  console.log('打开设置')
+  // console.log('打开设置')
   showUserMenu.value = false
 }
 
@@ -153,6 +171,15 @@ const handleSettings = () => {
  * 显示用户的图像生成历史记录
  */
 const handleHistory = () => {
+  if (!userState.isLoggedIn) {
+    // 未登录用户提示需要登录
+    ElMessage({
+      type: 'warning',
+      message: '查看历史记录需要先登录',
+      duration: 3000,
+    })
+    return
+  }
   showHistoryModal.value = true
 }
 
@@ -161,19 +188,7 @@ const handleCloseHistory = () => {
   showHistoryModal.value = false
 }
 
-/**
- * 处理图片测试按钮点击
- */
-const handleImageTest = () => {
-  showImageTestModal.value = true
-}
 
-/**
- * 关闭图片测试模态框
- */
-const handleCloseImageTest = () => {
-  showImageTestModal.value = false
-}
 
 // 获取用户头像URL（计算属性，确保响应式更新）
 const userAvatarUrl = computed(() => {
@@ -198,7 +213,7 @@ const getUserAvatarUrl = () => {
 
 // 处理头像加载错误
 const handleAvatarError = (event) => {
-  console.log('头像加载失败，使用默认头像')
+  // console.log('头像加载失败，使用默认头像')
   event.target.src = defaultAvatarUrl.value
 }
 
@@ -207,12 +222,15 @@ const checkStoredLogin = async () => {
   try {
     const restored = await userActions.restoreFromStorage()
     if (restored) {
+      // 清空可能存在的未登录时的图片数据
+      clearGeneratedImages()
+      
       // 确保用户信息完全加载后再切换页面
       await userActions.getUserProfile()
       currentPage.value = 'main'
     }
   } catch (error) {
-    console.error('检查登录状态失败:', error)
+    // console.error('检查登录状态失败:', error)
   }
 }
 
@@ -220,12 +238,12 @@ const checkStoredLogin = async () => {
 watch(
   () => userState.userInfo,
   (newUserInfo, oldUserInfo) => {
-    console.log('用户信息变化:', {
-      old: oldUserInfo,
-      new: newUserInfo,
-      avatarUrl: newUserInfo?.avatar_url || newUserInfo?.avatarUrl,
-      computedAvatarUrl: userAvatarUrl.value
-    })
+    // console.log('用户信息变化:', {
+    //   old: oldUserInfo,
+    //   new: newUserInfo,
+    //   avatarUrl: newUserInfo?.avatar_url || newUserInfo?.avatarUrl,
+    //   computedAvatarUrl: userAvatarUrl.value
+    // })
   },
   { deep: true }
 )
@@ -234,7 +252,7 @@ watch(
 watch(
   userAvatarUrl,
   (newUrl, oldUrl) => {
-    console.log('头像URL变化:', { old: oldUrl, new: newUrl })
+    // console.log('头像URL变化:', { old: oldUrl, new: newUrl })
   }
 )
 
@@ -248,13 +266,13 @@ onMounted(() => {
 
   // 检查浏览器兼容性
   if (!window.fetch) {
-    console.error('浏览器不支持Fetch API')
+    // console.error('浏览器不支持Fetch API')
     errorMessage.value = '您的浏览器不支持现代Web功能，请升级您的浏览器'
   }
 
   // 检查剪贴板API可用性
   if (!navigator.clipboard) {
-    console.warn('浏览器不支持剪贴板API，复制功能可能不可用')
+    // console.warn('浏览器不支持剪贴板API，复制功能可能不可用')
   }
 
   // 初始化主题设置
@@ -359,7 +377,8 @@ const clearGeneratedImages = () => {
           :isDarkMode="isDarkMode"
           @toggleTheme="toggleTheme"
           @login="handleLogin"
-          @register="goToRegister" />
+          @register="goToRegister"
+          @back="handleBackFromLogin" />
       </template>
 
       <template v-else-if="currentPage === 'register'">
@@ -367,7 +386,8 @@ const clearGeneratedImages = () => {
           :isDarkMode="isDarkMode"
           @toggleTheme="toggleTheme"
           @register-success="handleRegisterSuccess"
-          @login="goToLogin" />
+          @login="goToLogin"
+          @back="handleBackFromRegister" />
       </template>
 
       <template v-else-if="currentPage === 'profile' && userState.isLoggedIn">
@@ -377,20 +397,33 @@ const clearGeneratedImages = () => {
           @back="handleBackFromProfile" />
       </template>
 
-      <template v-else-if="currentPage === 'main' && userState.isLoggedIn">
+      <template v-else-if="currentPage === 'main'">
         <header class="app-header">
           <div class="user-info">
-            <!-- 历史记录按钮 -->
-            <div class="history-button-container">
+            <!-- 已登录用户的功能按钮 -->
+            <div v-if="userState.isLoggedIn" class="history-button-container">
               <button class="history-button" @click="handleHistory" title="历史记录">
-                <i class="icon-history"></i>
+                <svg class="icon" aria-hidden="true">
+                  <use xlink:href="#icon-lishi"></use>
+                </svg>
               </button>
-              <button class="test-button" @click="handleImageTest" title="图片测试工具">
-                <i class="icon-test">🔧</i>
+
+            </div>
+            
+            <!-- 未登录用户显示登录按钮 -->
+            <div v-if="!userState.isLoggedIn" class="guest-actions">
+              <button class="login-btn" @click="goToLogin">
+                <i class="icon-user"></i>
+                <span>登录</span>
+              </button>
+              <button class="register-btn" @click="goToRegister">
+                <i class="icon-user-plus"></i>
+                <span>注册</span>
               </button>
             </div>
             
-            <div class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
+            <!-- 已登录用户显示头像和菜单 -->
+            <div v-if="userState.isLoggedIn" class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
               <div class="user-avatar">
                 <img :src="userAvatarUrl" 
                      :alt="userState.userInfo?.username" 
@@ -465,16 +498,11 @@ const clearGeneratedImages = () => {
           v-if="showHistoryModal"
           @close="handleCloseHistory" />
         
-        <!-- 图片测试工具模态框 -->
-        <div v-if="showImageTestModal" class="modal-overlay" @click="handleCloseImageTest">
-          <div class="modal-container" @click.stop>
-            <button class="modal-close" @click="handleCloseImageTest">×</button>
-            <ImageLoadTest />
-          </div>
-        </div>
+
 
         <footer class="app-footer" style="margin-top: auto;">
           <p>
+            <!-- <a>@Huanst</a> -->
             <a
               href="https://beian.miit.gov.cn/#/Integrated/recordQuery"
               target="_blank"
@@ -821,6 +849,49 @@ body {
   margin: 8px 0;
 }
 
+/* 访客用户按钮样式 */
+.guest-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.login-btn,
+.register-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 2px solid var(--accent-color);
+  background: transparent;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.login-btn:hover {
+  background: var(--accent-color);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 201, 255, 0.3);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  color: white;
+  border-color: transparent;
+}
+
+.register-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(83, 82, 237, 0.4);
+  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+}
+
 /* 历史记录按钮样式 */
 .history-button-container {
   position: relative;
@@ -829,11 +900,10 @@ body {
   gap: 10px;
 }
 
-.history-button,
-.test-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.history-button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50% !important;
   background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
   border: 2px solid var(--accent-color);
   color: white;
@@ -845,17 +915,16 @@ body {
   justify-content: center;
   font-size: 18px;
   flex-shrink: 0;
+  padding: 0;
 }
 
-.history-button:hover,
-.test-button:hover {
+.history-button:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
 }
 
-.history-button:active,
-.test-button:active {
+.history-button:active {
   transform: scale(0.95);
 }
 
@@ -915,13 +984,11 @@ body {
 .icon-sun::before { content: '☀️'; }
 .icon-moon::before { content: '🌙'; }
 .icon-logout::before { content: '🚪'; }
-.icon-history::before { content: '📋'; }
-
 /* 历史记录按钮图标样式 */
-.history-button .icon-history {
-  font-style: normal;
-  font-size: 18px;
-  line-height: 1;
+.history-button .icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 /* 菜单动画 */

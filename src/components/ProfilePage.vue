@@ -113,8 +113,8 @@ import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { EditPen, ArrowLeft } from '@element-plus/icons-vue'
 import { userState, userActions } from '@/utils/userStore'
-import { API_SERVER_URL } from '@/utils/urlutils'
-import { userAPI } from '@/utils/apiservice'
+import { API_SERVER_URL } from '@/utils/urlUtils'
+import { userAPI } from '@/utils/apiService'
 
 // 接收从父组件传来的props
 const props = defineProps({
@@ -202,7 +202,7 @@ const refreshUserProfile = async () => {
       updateAvatarUrl()
     }
   } catch (error) {
-    console.error('获取用户资料失败:', error)
+    // console.error('获取用户资料失败:', error)
   }
 }
 
@@ -276,7 +276,7 @@ const uploadAvatar = async (file) => {
       throw new Error(result.message || '头像上传失败')
     }
   } catch (error) {
-    console.error('头像上传失败:', error)
+    // console.error('头像上传失败:', error)
     
     let errorMessage = '头像上传失败，请重试'
     if (error.response?.data?.message) {
@@ -333,7 +333,7 @@ const handleUpdateProfile = async () => {
       storage.setItem('user_info', JSON.stringify(userState.userInfo))
     }
   } catch (error) {
-    console.error('更新个人信息失败:', error)
+    // console.error('更新个人信息失败:', error)
     ElMessage.error('更新失败，请重试')
   } finally {
     updating.value = false

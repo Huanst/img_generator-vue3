@@ -3,6 +3,15 @@
     <div class="login-card-wrapper">
       <glassmorphic-card variant="primary" :showGlow="true">
         <div class="login-header">
+          <div class="back-button">
+            <button
+              @click="goBack"
+              class="back-btn"
+              title="返回主页">
+              <i class="back-icon">←</i>
+            </button>
+          </div>
+          
           <h2 class="login-title">用户登录</h2>
 
           <div class="theme-toggle">
@@ -88,7 +97,7 @@ import { User, Lock, UserFilled } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { userActions } from '@/utils/userStore'
-import { userAPI } from '@/utils/apiservice'
+import { userAPI } from '@/utils/apiService'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -98,7 +107,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['toggleTheme', 'login', 'register'])
+const emit = defineEmits(['toggleTheme', 'login', 'register', 'back'])
 
 // 表单引用
 const loginFormRef = ref(null)
@@ -160,7 +169,7 @@ const handleUsernameInput = async () => {
         userAvatar.value = ''
       }
     } catch (error) {
-      console.log('获取头像失败:', error)
+      // console.log('获取头像失败:', error)
       userAvatar.value = ''
     }
   }, 500)
@@ -197,6 +206,11 @@ const handleLogin = async () => {
 // 跳转到注册页面
 const goToRegister = () => {
   emit('register')
+}
+
+// 返回主页面
+const goBack = () => {
+  emit('back')
 }
 
 // 检查是否有记住的登录信息
@@ -262,6 +276,38 @@ onUnmounted(() => {
   position: relative;
 }
 
+.back-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.back-btn {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-color, #fff);
+}
+
+.back-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateX(-2px);
+}
+
+.back-icon {
+  font-size: 18px;
+  line-height: 1;
+  font-style: normal;
+}
+
 .login-title {
   color: var(--text-color, #fff);
   font-weight: 600;
@@ -269,6 +315,7 @@ onUnmounted(() => {
   letter-spacing: 1px;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   flex: 1;
+  text-align: center;
 }
 
 .login-options {

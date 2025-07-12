@@ -55,7 +55,7 @@
           class="image-container">
           <div class="image-number">{{ index + 1 }}</div>
           <el-image
-            :src="image.url"
+            :src="image.url || image.original_url || image.local_url"
             fit="cover"
             :preview-src-list="imageUrls"
             :initial-index="index"
@@ -81,13 +81,13 @@
               <el-button
                 class="action-btn"
                 :loading="downloadingIndex === index"
-                @click="downloadImage(image.url, index)">
+                @click="downloadImage(image.url || image.original_url || image.local_url, index)">
                 <el-icon><Download /></el-icon>
               </el-button>
             </el-tooltip>
 
             <el-tooltip content="复制链接" placement="top">
-              <el-button class="action-btn" @click="copyImageUrl(image.url)">
+              <el-button class="action-btn" @click="copyImageUrl(image.url || image.original_url || image.local_url)">
                 <el-icon><Link /></el-icon>
               </el-button>
             </el-tooltip>
@@ -140,7 +140,7 @@ onUnmounted(() => {
   isMounted.value = false
 })
 
-const imageUrls = computed(() => props.images.map(img => img.url))
+const imageUrls = computed(() => props.images.map(img => img.url || img.original_url || img.local_url))
 
 // 检查图片URL的有效性
 onMounted(() => {
@@ -151,7 +151,7 @@ onMounted(() => {
         const img = new Image()
         const timeoutId = setTimeout(() => {
           if (isMounted.value) {
-            console.error(`图片加载超时: ${image.url}`)
+            // console.error(`图片加载超时: ${image.url}`)
             loadingErrors.value[index] = true
           }
         }, 15000) // 15秒超时
@@ -159,9 +159,9 @@ onMounted(() => {
         img.onload = () => {
           clearTimeout(timeoutId)
           if (isMounted.value) {
-            console.log(
-              `图片 ${index + 1} 加载成功: ${image.url.substring(0, 50)}...`
-            )
+            // console.log(
+          //   `图片 ${index + 1} 加载成功: ${image.url.substring(0, 50)}...`
+          // )
             loadingErrors.value[index] = false
           }
         }
@@ -169,16 +169,16 @@ onMounted(() => {
         img.onerror = () => {
           clearTimeout(timeoutId)
           if (isMounted.value) {
-            console.error(
-              `图片 ${index + 1} 加载失败: ${image.url.substring(0, 50)}...`
-            )
+            // console.error(
+          //   `图片 ${index + 1} 加载失败: ${image.url.substring(0, 50)}...`
+          // )
             loadingErrors.value[index] = true
           }
         }
 
         img.src = image.url
       } else {
-        console.error(`图片 ${index + 1} URL无效:`, image)
+        // console.error(`图片 ${index + 1} URL无效:`, image)
         loadingErrors.value[index] = true
       }
     })
@@ -220,7 +220,7 @@ const getImageSize = () => {
 
 const downloadImage = async (url, index) => {
   if (!url) {
-    console.error('下载失败: URL无效')
+    // console.error('下载失败: URL无效')
     ElNotification({
       title: '下载失败',
       message: 'URL无效，无法下载图片',
@@ -233,16 +233,23 @@ const downloadImage = async (url, index) => {
 
   try {
     downloadingIndex.value = index
-    console.log(`开始下载图片 ${index + 1}: ${url.substring(0, 50)}...`)
+    // console.log(`开始下载图片 ${index + 1}: ${url.substring(0, 50)}...`)
 
     // 创建一个链接并打开图片，让用户手动保存
     const link = document.createElement('a')
     link.href = url
     link.target = '_blank'
     link.rel = 'noopener noreferrer'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    
+    // 安全检查document.body是否存在
+    if (document.body) {
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      console.error('document.body不存在，无法打开图片')
+      throw new Error('DOM未准备就绪')
+    }
 
     ElNotification({
       title: '图片已打开',
@@ -252,12 +259,12 @@ const downloadImage = async (url, index) => {
       showClose: true,
     })
 
-    console.log(`图片 ${index + 1} 已打开`)
+    // console.log(`图片 ${index + 1} 已打开`)
   } catch (error) {
     // 如果组件已卸载，不继续处理错误
     if (!isMounted.value) return
 
-    console.error('下载图片失败:', error)
+    // console.error('下载图片失败:', error)
 
     ElNotification({
       title: '图片已尝试打开',
@@ -277,7 +284,7 @@ const downloadImage = async (url, index) => {
 const downloadAllImages = async () => {
   if (downloadingAll.value) return
   if (!props.images || props.images.length === 0) {
-    console.error('没有可下载的图片')
+    // console.error('没有可下载的图片')
     ElNotification({
       title: '无图片',
       message: '没有可下载的图片',
@@ -317,17 +324,24 @@ const downloadAllImages = async () => {
           link.href = props.images[i].url
           link.target = '_blank'
           link.rel = 'noopener noreferrer'
-          document.body.appendChild(link)
-          link.click()
-          document.body.removeChild(link)
+          
+          // 安全检查document.body是否存在
+          if (document.body) {
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+          } else {
+            // console.error('document.body不存在，无法打开图片')
+            throw new Error('DOM未准备就绪')
+          }
 
           // 短暂延迟，避免浏览器拦截过多弹窗
           await new Promise(resolve => setTimeout(resolve, 300))
 
           openedCount++
-          console.log(`图片 ${i + 1} 已在新标签页打开`)
+          // console.log(`图片 ${i + 1} 已在新标签页打开`)
         } catch (error) {
-          console.error(`图片 ${i + 1} 打开失败:`, error)
+          // console.error(`图片 ${i + 1} 打开失败:`, error)
         }
       }
     }
@@ -370,7 +384,7 @@ const downloadAllImages = async () => {
     // 如果组件已卸载，不继续处理错误
     if (!isMounted.value) return
 
-    console.error('批量打开失败:', error)
+    // console.error('批量打开失败:', error)
     ElNotification({
       title: '操作失败',
       message: '请检查浏览器是否阻止了弹窗',
@@ -388,7 +402,7 @@ const downloadAllImages = async () => {
 
 const copyImageUrl = url => {
   if (!url) {
-    console.error('复制失败: URL无效')
+    // console.error('复制失败: URL无效')
     ElNotification({
       title: '复制失败',
       message: 'URL无效，无法复制链接',
@@ -407,7 +421,7 @@ const copyImageUrl = url => {
         // 如果组件已卸载，不继续处理
         if (!isMounted.value) return
 
-        console.log('图片链接复制成功')
+        // console.log('图片链接复制成功')
         ElNotification({
           title: '复制成功',
           message: '图片链接已复制到剪贴板',
@@ -420,7 +434,7 @@ const copyImageUrl = url => {
         // 如果组件已卸载，不继续处理错误
         if (!isMounted.value) return
 
-        console.error('复制图片链接失败:', error)
+        // console.error('复制图片链接失败:', error)
         fallbackCopy(url)
       })
   } else {
@@ -432,6 +446,12 @@ const copyImageUrl = url => {
 // 添加备用复制方法
 const fallbackCopy = text => {
   try {
+    // 安全检查document.body是否存在
+    if (!document.body) {
+      // console.error('document.body不存在，无法使用备用复制方法')
+      throw new Error('DOM未准备就绪')
+    }
+
     // 创建临时文本区域
     const textArea = document.createElement('textarea')
     textArea.value = text
@@ -450,7 +470,7 @@ const fallbackCopy = text => {
     document.body.removeChild(textArea)
 
     if (successful) {
-      console.log('图片链接复制成功(备用方法)')
+      // console.log('图片链接复制成功(备用方法)')
       ElNotification({
         title: '复制成功',
         message: '图片链接已复制到剪贴板',
@@ -462,7 +482,7 @@ const fallbackCopy = text => {
       throw new Error('备用复制方法失败')
     }
   } catch (err) {
-    console.error('备用复制方法失败:', err)
+    // console.error('备用复制方法失败:', err)
     ElNotification({
       title: '复制失败',
       message: '无法复制图片链接，请手动复制',
@@ -476,12 +496,12 @@ const fallbackCopy = text => {
 // 添加handleImageClick函数
 const handleImageClick = () => {
   // 可以在这里添加点击图片时的额外处理逻辑
-  console.log('图片被点击')
+  // console.log('图片被点击')
 }
 
 // 关闭结果面板
 const closeResultPanel = () => {
-  console.log('关闭结果面板')
+  // console.log('关闭结果面板')
   emit('close')
 }
 </script>

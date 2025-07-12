@@ -1,5 +1,5 @@
 import { reactive } from 'vue'
-import { authAPI, userAPI } from './apiservice'
+import { authAPI, userAPI } from './apiService'
 import apiClient from './apiClient'
 import { ElMessage } from 'element-plus'
 
@@ -49,7 +49,7 @@ export const userActions = {
         throw new Error(response.data.message || '登录失败')
       }
     } catch (error) {
-      console.error('登录错误:', error)
+      // console.error('登录错误:', error)
       
       let errorMessage = '登录失败，请重试'
       
@@ -105,7 +105,7 @@ export const userActions = {
         throw new Error(response.data.message || '注册失败')
       }
     } catch (error) {
-      console.error('注册失败:', error)
+      // console.error('注册失败:', error)
       
       let errorMessage = '注册失败，请稍后重试'
       
@@ -183,7 +183,7 @@ export const userActions = {
         throw new Error('Token无效')
       }
     } catch (error) {
-      console.error('Token验证失败:', error)
+      // console.error('Token验证失败:', error)
       this.logout()
       return { success: false }
     }
@@ -211,7 +211,7 @@ export const userActions = {
         
         return validationResult.success
       } catch (error) {
-        console.error('恢复用户状态失败:', error)
+        // console.error('恢复用户状态失败:', error)
         this.logout()
         return false
       }
@@ -240,7 +240,7 @@ export const userActions = {
         throw new Error('获取用户信息失败')
       }
     } catch (error) {
-      console.error('获取用户信息错误:', error)
+      // console.error('获取用户信息错误:', error)
       return { success: false, error: error.message }
     }
   },

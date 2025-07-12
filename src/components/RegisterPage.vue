@@ -3,6 +3,15 @@
     <div class="register-card-wrapper">
       <glassmorphic-card variant="primary" :showGlow="true">
         <div class="register-header">
+          <div class="back-button">
+            <button
+              @click="goBack"
+              class="back-btn"
+              title="返回主页">
+              <i class="back-icon">←</i>
+            </button>
+          </div>
+          
           <h2 class="register-title">用户注册</h2>
 
           <div class="theme-toggle">
@@ -110,7 +119,7 @@ import { User, Lock, Message, UserFilled, Plus } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage } from 'element-plus'
 import { userActions } from '@/utils/userStore'
-import { authAPI, userAPI } from '@/utils/apiservice'
+import { authAPI, userAPI } from '@/utils/apiService'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -120,7 +129,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['toggleTheme', 'register-success', 'login'])
+const emit = defineEmits(['toggleTheme', 'register-success', 'login', 'back'])
 
 // 表单引用
 const registerFormRef = ref(null)
@@ -271,10 +280,10 @@ const handleRegister = async () => {
                 
                 await userAPI.uploadAvatar(avatarFormData)
                 
-                console.log('头像上传成功')
+                // console.log('头像上传成功')
               }
             } catch (avatarError) {
-              console.warn('头像上传失败:', avatarError)
+              // console.warn('头像上传失败:', avatarError)
             }
           }
           
@@ -297,7 +306,7 @@ const handleRegister = async () => {
         }
       } catch (error) {
         loading.value = false
-        console.error('注册请求失败:', error)
+        // console.error('注册请求失败:', error)
         
         // 处理具体的错误信息
         if (error.response && error.response.data) {
@@ -313,6 +322,11 @@ const handleRegister = async () => {
 // 跳转到登录页面
 const goToLogin = () => {
   emit('login')
+}
+
+// 返回主页
+const goBack = () => {
+  emit('back')
 }
 
 
@@ -353,6 +367,38 @@ const goToLogin = () => {
   position: relative;
 }
 
+.back-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.back-btn {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-color, #fff);
+}
+
+.back-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateX(-2px);
+}
+
+.back-icon {
+  font-size: 18px;
+  line-height: 1;
+  font-style: normal;
+}
+
 .register-title {
   color: var(--text-color, #fff);
   font-weight: 600;
@@ -360,6 +406,7 @@ const goToLogin = () => {
   letter-spacing: 1px;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   flex: 1;
+  text-align: center;
 }
 
 

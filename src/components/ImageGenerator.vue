@@ -319,7 +319,7 @@ const generateImage = async () => {
     if (logParams.prompt) {
       logParams.prompt = logParams.prompt.substring(0, 20) + '...'
     }
-    console.log('正在请求图像生成，参数:', JSON.stringify(logParams))
+    // console.log('正在请求图像生成，参数:', JSON.stringify(logParams))
 
     // 发送请求到本地API
     const response = await apiClient.post('/generate-image', requestParams)
@@ -327,7 +327,7 @@ const generateImage = async () => {
     // 如果组件已卸载，不继续处理
     if (!isMounted) return
 
-    console.log('API响应状态:', response.status)
+    // console.log('API响应状态:', response.status)
 
     // 检查响应数据
     if (
@@ -335,13 +335,13 @@ const generateImage = async () => {
       !response.data.data ||
       !Array.isArray(response.data.data)
     ) {
-      console.error('API响应格式错误:', response.data)
+      // console.error('API响应格式错误:', response.data)
       throw new Error('服务器返回的数据格式不正确')
     }
 
     // 检查是否有图片URL
     if (response.data.data.length === 0 || !response.data.data[0].url) {
-      console.error('API未返回图片URL:', response.data)
+      // console.error('API未返回图片URL:', response.data)
       throw new Error('未能获取到图片URL')
     }
 
@@ -353,16 +353,16 @@ const generateImage = async () => {
     // 如果组件已卸载，不继续处理错误
     if (!isMounted) return
 
-    console.error('图像生成失败:', error)
+    // console.error('图像生成失败:', error)
 
     // 增强错误信息
     if (error.response) {
       // 服务器响应了错误状态码
-      console.error('API错误响应:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-      })
+      // console.error('API错误响应:', {
+      //   status: error.response.status,
+      //   statusText: error.response.statusText,
+      //   data: error.response.data,
+      // })
       emit('error', {
         message: `API错误 (${error.response.status}): ${
           error.response.data?.error?.message ||
@@ -372,7 +372,7 @@ const generateImage = async () => {
       })
     } else if (error.request) {
       // 请求已发送但没有收到响应
-      console.error('API无响应:', error.request)
+      // console.error('API无响应:', error.request)
       emit('error', { message: '服务器无响应，请检查网络连接' })
     } else {
       // 请求配置或其他错误

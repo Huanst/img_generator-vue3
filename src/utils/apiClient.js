@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { API_BASE_URL, getApiUrl } from './urlutils'
+import { API_BASE_URL, getApiUrl } from './urlUtils'
 import { ElMessage } from 'element-plus'
 
 // 创建axios实例
@@ -27,22 +27,22 @@ apiClient.interceptors.request.use(
 
     // 调试信息
     if (import.meta.env.DEV) {
-      console.log('API请求:', {
-        url: config.url,
-        method: config.method,
-        params: config.params,
-        data: config.data,
-        headers: {
-          ...config.headers,
-          Authorization: config.headers.Authorization ? '已设置' : '未设置',
-        },
-      })
+      // console.log('API请求:', {
+      //   url: config.url,
+      //   method: config.method,
+      //   params: config.params,
+      //   data: config.data,
+      //   headers: {
+      //     ...config.headers,
+      //     Authorization: config.headers.Authorization ? '已设置' : '未设置',
+      //   },
+      // })
     }
 
     return config
   },
   error => {
-    console.error('请求拦截器错误:', error)
+    // console.error('请求拦截器错误:', error)
     return Promise.reject(error)
   }
 )
@@ -52,11 +52,11 @@ apiClient.interceptors.response.use(
   response => {
     // 调试信息
     if (import.meta.env.DEV) {
-      console.log('API响应成功:', {
-        url: response.config.url,
-        status: response.status,
-        data: response.data,
-      })
+      // console.log('API响应成功:', {
+      //   url: response.config.url,
+      //   status: response.status,
+      //   data: response.data,
+      // })
     }
 
     return response
@@ -64,13 +64,13 @@ apiClient.interceptors.response.use(
   error => {
     // 处理响应错误
     if (import.meta.env.DEV) {
-      console.error('API响应错误:', {
-        url: error.config?.url,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message,
-      })
+      // console.error('API响应错误:', {
+      //   url: error.config?.url,
+      //   status: error.response?.status,
+      //   statusText: error.response?.statusText,
+      //   data: error.response?.data,
+      //   message: error.message,
+      // })
     }
 
     // 处理特定错误码

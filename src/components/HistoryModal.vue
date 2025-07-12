@@ -4,11 +4,10 @@
       <!-- 模态框头部 -->
       <div class="modal-header">
         <h2 class="modal-title">
-          <span class="icon-history"></span>
           图片生成历史
         </h2>
         <button class="close-button" @click="closeModal">
-          <span class="icon-close">×</span>
+          ×
         </button>
       </div>
 
@@ -30,7 +29,6 @@
 
         <!-- 空状态 -->
         <div v-else-if="!historyItems.length" class="empty-container">
-          <div class="empty-icon">📝</div>
           <p class="empty-message">暂无生成历史</p>
           <p class="empty-hint">开始生成您的第一张图片吧！</p>
         </div>
@@ -44,17 +42,30 @@
           >
             <!-- 图片预览 -->
             <div class="image-preview">
-              <img 
-                :src="item.image_url" 
+              <el-image
+                :src="getImageUrl(item.display_url)"
                 :alt="item.prompt"
                 class="preview-image"
-                @error="handleImageError"
-                @load="(e) => console.log('图片加载成功:', e.target.src)"
-              />
+                fit="cover"
+                :preview-src-list="[getImageUrl(item.display_url)]"
+                :preview-teleported="true"
+                loading="lazy"
+                @error="handleImageError">
+                <template #placeholder>
+                  <div class="image-placeholder">
+                    <el-icon class="is-loading"><Loading /></el-icon>
+                  </div>
+                </template>
+                <template #error>
+                  <div class="image-error">
+                    <span>无法加载此图片，请重新生成</span>
+                  </div>
+                </template>
+              </el-image>
             </div>
 
             <!-- 历史记录信息 -->
-            <div class="item-info">
+            <div class="item-info" @click="handleTitleClick(item)">
               <p class="prompt-text">{{ item.prompt }}</p>
               <p class="created-time">{{ formatDate(item.created_at) }}</p>
             </div>
@@ -62,18 +73,18 @@
             <!-- 操作按钮 -->
             <div class="item-actions">
               <button 
-                class="action-button view-button" 
-                @click="viewImage(item.image_url)"
-                title="查看大图"
-              >
-                <span class="icon-view">👁</span>
-              </button>
-              <button 
                 class="action-button download-button" 
-                @click="downloadImage(item.image_url, item.prompt)"
+                @click="downloadImage(getImageUrl(item.display_url), item.prompt)"
                 title="下载图片"
               >
-                <span class="icon-download">⬇</span>
+                下载
+              </button>
+              <button 
+                class="action-button delete-button" 
+                @click="confirmDeleteImage(item)"
+                title="删除图片"
+              >
+                删除
               </button>
             </div>
           </div>
@@ -108,8 +119,9 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
+import { Loading, PictureFilled } from '@element-plus/icons-vue'
 import { userState } from '@/utils/userStore'
-import { API_SERVER_URL } from '@/utils/urlutils'
+import { API_SERVER_URL } from '@/utils/urlUtils'
 
 /**
  * 组件属性定义
@@ -152,12 +164,12 @@ const closeModal = () => {
  * @param {number} limit - 每页数量
  */
 const loadHistory = async (page = 1, limit = 10) => {
-  console.log('开始加载历史记录...', { page, limit })
-  console.log('用户token:', userState.token ? '存在' : '不存在')
-  console.log('API_SERVER_URL:', API_SERVER_URL)
+  // console.log('开始加载历史记录...', { page, limit })
+      // console.log('用户token:', userState.token ? '存在' : '不存在')
+      // console.log('API_SERVER_URL:', API_SERVER_URL)
   
   if (!userState.token) {
-    console.error('用户未登录，无法加载历史记录')
+    // console.error('用户未登录，无法加载历史记录')
     error.value = '请先登录'
     return
   }
@@ -167,7 +179,7 @@ const loadHistory = async (page = 1, limit = 10) => {
 
   try {
     const url = `${API_SERVER_URL}/api/image-history?page=${page}&limit=${limit}`
-    console.log('请求URL:', url)
+    // console.log('请求URL:', url)
     
     const response = await fetch(url, {
       method: 'GET',
@@ -177,39 +189,39 @@ const loadHistory = async (page = 1, limit = 10) => {
       }
     })
 
-    console.log('响应状态:', response.status)
-    console.log('响应头:', response.headers)
+    // console.log('响应状态:', response.status)
+        // console.log('响应头:', response.headers)
     
     const data = await response.json()
-    console.log('响应数据:', data)
+    // console.log('响应数据:', data)
 
     if (data.status === 'success') {
       historyItems.value = data.data.items || []
       Object.assign(pagination, data.data.pagination || {})
-      console.log('历史记录加载成功:', historyItems.value.length, '条记录')
+      // console.log('历史记录加载成功:', historyItems.value.length, '条记录')
       
       // 检查每个图片URL的有效性
       historyItems.value.forEach((item, index) => {
-        console.log(`第${index + 1}条记录:`, {
-          id: item.id,
-          prompt: item.prompt?.substring(0, 30) + '...',
-          image_url: item.image_url,
-          created_at: item.created_at
-        })
+        // console.log(`第${index + 1}条记录:`, {
+        //   id: item.id,
+        //   prompt: item.prompt?.substring(0, 30) + '...',
+        //   display_url: item.display_url,
+        //   created_at: item.created_at
+        // })
         
         // 检查图片URL是否有效
-        if (!item.image_url || item.image_url.trim() === '') {
-          console.warn(`第${index + 1}条记录的图片URL为空`)
-        } else if (!item.image_url.startsWith('http')) {
-          console.warn(`第${index + 1}条记录的图片URL格式可能有问题:`, item.image_url)
+        if (!item.display_url || item.display_url.trim() === '') {
+          // console.warn(`第${index + 1}条记录的图片URL为空`)
+        } else if (!item.display_url.startsWith('http') && !item.display_url.startsWith('/') && !item.display_url.startsWith('data:')) {
+          // console.warn(`第${index + 1}条记录的图片URL格式可能有问题:`, item.display_url)
         }
       })
     } else {
-      console.error('API返回错误:', data.message)
+      // console.error('API返回错误:', data.message)
       error.value = data.message || '加载历史记录失败'
     }
   } catch (err) {
-    console.error('加载历史记录失败:', err)
+    // console.error('加载历史记录失败:', err)
     error.value = '网络错误，请稍后重试'
   } finally {
     loading.value = false
@@ -243,12 +255,63 @@ const formatDate = (dateString) => {
 }
 
 /**
- * 查看图片大图
- * @param {string} imageUrl - 图片URL
+ * 获取完整的图片URL
+ * @param {string} displayUrl - 后端返回的display_url
+ * @returns {string} 完整的图片URL
  */
-const viewImage = (imageUrl) => {
-  window.open(imageUrl, '_blank')
+const getImageUrl = (displayUrl) => {
+  if (!displayUrl) return ''
+  
+  // 如果是data URL或完整URL，直接返回
+  if (displayUrl.startsWith('data:') || displayUrl.startsWith('http')) {
+    return displayUrl
+  }
+  
+  // 如果是相对路径，拼接服务器URL
+  if (displayUrl.startsWith('/')) {
+    return `${API_SERVER_URL}${displayUrl}`
+  }
+  
+  return displayUrl
 }
+
+/**
+ * 处理图片或标题点击事件
+ * @param {Object} item - 历史记录项
+ */
+const handleTitleClick = (item) => {
+  const imageUrl = getImageUrl(item.display_url)
+  if (!imageUrl) {
+    ElNotification({
+      title: '无法预览',
+      message: '无法加载此图片，请重新生成',
+      type: 'error',
+      duration: 3000
+    })
+    return
+  }
+  
+  // 验证图片是否可以加载
+  const img = new Image()
+  img.onload = () => {
+    // 图片加载成功，触发对应图片的预览
+    const imageElement = document.querySelector(`[src="${imageUrl}"]`)
+    if (imageElement && imageElement.click) {
+      imageElement.click()
+    }
+  }
+  img.onerror = () => {
+    ElNotification({
+      title: '无法预览',
+      message: '无法加载此图片，请重新生成',
+      type: 'error',
+      duration: 3000
+    })
+  }
+  img.src = imageUrl
+}
+
+
 
 /**
  * 下载图片
@@ -264,14 +327,81 @@ const downloadImage = async (imageUrl, prompt) => {
     const link = document.createElement('a')
     link.href = url
     link.download = `generated-image-${Date.now()}.png`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    
+    // 安全检查document.body是否存在
+    if (document.body) {
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      // console.error('document.body不存在，无法下载图片')
+      alert('下载失败：DOM未准备就绪')
+      return
+    }
     
     window.URL.revokeObjectURL(url)
   } catch (err) {
-    console.error('下载图片失败:', err)
+    // console.error('下载图片失败:', err)
     alert('下载失败，请稍后重试')
+  }
+}
+
+/**
+ * 确认删除图片
+ * @param {Object} item - 历史记录项
+ */
+const confirmDeleteImage = (item) => {
+  const confirmed = confirm(`确定要删除这张图片吗？\n\n提示词：${item.prompt}\n\n删除后将无法恢复！`)
+  
+  if (confirmed) {
+    deleteImage(item.id)
+  }
+}
+
+/**
+ * 删除图片
+ * @param {number} imageId - 图片ID
+ */
+const deleteImage = async (imageId) => {
+  if (!userState.token) {
+    alert('请先登录')
+    return
+  }
+
+  try {
+    const response = await fetch(`${API_SERVER_URL}/api/image-history/${imageId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${userState.token}`,
+        'Content-Type': 'application/json'
+      }
+    })
+
+    const data = await response.json()
+
+    if (data.status === 'success') {
+      // 从列表中移除已删除的项目
+      historyItems.value = historyItems.value.filter(item => item.id !== imageId)
+      
+      // 更新分页信息
+      pagination.total = Math.max(0, pagination.total - 1)
+      pagination.totalPages = Math.ceil(pagination.total / pagination.limit)
+      
+      // 如果当前页没有数据且不是第一页，则跳转到上一页
+      if (historyItems.value.length === 0 && pagination.page > 1) {
+        changePage(pagination.page - 1)
+      } else if (historyItems.value.length === 0 && pagination.page === 1) {
+        // 如果是第一页且没有数据，重新加载
+        loadHistory(1, pagination.limit)
+      }
+      
+      alert('图片删除成功')
+    } else {
+      alert(data.message || '删除失败，请稍后重试')
+    }
+  } catch (error) {
+    // console.error('删除图片失败:', error)
+    alert('删除失败，请稍后重试')
   }
 }
 
@@ -280,20 +410,20 @@ const downloadImage = async (imageUrl, prompt) => {
  * @param {Event} event - 错误事件
  */
 const handleImageError = (event) => {
-  console.error('图片加载失败:', event.target.src)
+  // console.error('图片加载失败:', event.target.src)
   
   // 尝试使用public目录下的默认图片
   const defaultImage = '/default-avatar.png'
   
   // 如果已经是默认图片还失败，则显示占位符
   if (event.target.src.includes('default-avatar.png')) {
-    console.error('默认图片也加载失败，使用占位符')
+    // console.error('默认图片也加载失败，使用占位符')
     event.target.style.display = 'none'
     
     // 创建占位符元素
     const placeholder = document.createElement('div')
     placeholder.className = 'image-placeholder'
-    placeholder.innerHTML = '🖼️'
+    placeholder.innerHTML = '图片'
     placeholder.style.cssText = `
       width: 100%;
       height: 100%;
@@ -302,14 +432,18 @@ const handleImageError = (event) => {
       justify-content: center;
       background: var(--border-color);
       color: var(--text-secondary);
-      font-size: 24px;
+      font-size: 14px;
       border-radius: 6px;
     `
     
     // 替换图片元素
-    event.target.parentNode.appendChild(placeholder)
+    if (event.target.parentNode) {
+      event.target.parentNode.appendChild(placeholder)
+    } else {
+      // console.error('无法找到父节点，无法添加占位符')
+    }
   } else {
-    console.log('尝试使用默认图片:', defaultImage)
+    // console.log('尝试使用默认图片:', defaultImage)
     event.target.src = defaultImage
   }
 }
@@ -318,7 +452,7 @@ const handleImageError = (event) => {
  * 组件挂载时加载数据
  */
 onMounted(() => {
-  console.log('HistoryModal mounted, loading history...')
+  // console.log('HistoryModal mounted, loading history...')
   loadHistory()
 })
 </script>
@@ -377,11 +511,16 @@ onMounted(() => {
   background: none;
   border: none;
   color: white;
-  font-size: 24px;
+  font-size: 20px;
+  font-weight: bold;
   cursor: pointer;
-  padding: 5px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .close-button:hover {
@@ -500,8 +639,36 @@ onMounted(() => {
 .preview-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  transition: opacity 0.3s ease;
+  cursor: zoom-in;
+}
+
+.image-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+}
+
+.image-error {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.1);
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: center;
+  padding: 8px;
+}
+
+.image-error span {
+  margin-top: 4px;
+  line-height: 1.2;
 }
 
 .preview-image:hover {
@@ -528,6 +695,16 @@ onMounted(() => {
 .item-info {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.item-info:hover {
+  color: var(--accent-color);
+}
+
+.item-info:hover .prompt-text {
+  color: var(--accent-color);
 }
 
 .prompt-text {
@@ -556,27 +733,20 @@ onMounted(() => {
 }
 
 .action-button {
-  width: 36px;
   height: 36px;
+  padding: 0 12px;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.view-button {
-  background: var(--accent-color);
-  color: white;
-}
 
-.view-button:hover {
-  background: var(--primary-color);
-  transform: scale(1.1);
-}
 
 .download-button {
   background: #28a745;
@@ -585,6 +755,16 @@ onMounted(() => {
 
 .download-button:hover {
   background: #218838;
+  transform: scale(1.1);
+}
+
+.delete-button {
+  background: #dc3545;
+  color: white;
+}
+
+.delete-button:hover {
+  background: #c82333;
   transform: scale(1.1);
 }
 
@@ -624,11 +804,7 @@ onMounted(() => {
   font-size: 14px;
 }
 
-/* 图标样式 */
-.icon-history::before { content: '📋'; }
-.icon-close::before { content: '×'; }
-.icon-view::before { content: '👁'; }
-.icon-download::before { content: '⬇'; }
+
 
 /* 动画 */
 @keyframes fadeIn {
