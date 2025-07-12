@@ -6,11 +6,13 @@ import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
 import HistoryModal from './components/HistoryModal.vue'
+import WeChatTip from './components/WeChatTip.vue'
 
 import { userState, userActions } from '@/utils/userStore'
 import { healthAPI } from '@/utils/apiService'
 import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlUtils'
 import { ElMessage } from 'element-plus'
+import { isWeChatBrowser } from '@/utils/wechatCompat'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
@@ -275,6 +277,11 @@ onMounted(() => {
     // console.warn('浏览器不支持剪贴板API，复制功能可能不可用')
   }
 
+  // 检测微信浏览器并添加CSS类
+  if (isWeChatBrowser()) {
+    document.body.classList.add('wechat-browser')
+  }
+
   // 初始化主题设置
   detectSystemTheme()
   setupThemeListener()
@@ -370,6 +377,9 @@ const clearGeneratedImages = () => {
 
 <template>
   <div class="app-container">
+    <!-- 微信浏览器提示 -->
+    <WeChatTip />
+    
     <!-- 背景层 -->
     <div class="app-background"></div>
     <div class="mouse-glow"></div>
@@ -1369,7 +1379,35 @@ body {
   opacity: 0.5;
 }
 
-/* 移动端全局优化 */
+/* 微信浏览器特殊样式 */
+.wechat-browser {
+  /* 防止微信浏览器的橡皮筋效果 */
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  
+  #app {
+    height: 100vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 隐藏微信浏览器的分享按钮区域 */
+  .el-header {
+    padding-top: env(safe-area-inset-top, 0);
+  }
+  
+  /* 优化微信浏览器的输入框体验 */
+  input, textarea {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+}
+
+/* 全局移动端优化样式 */
 @media (max-width: 768px) {
   /* 优化触摸目标大小 */
   button, .el-button, .action-btn, .menu-item {

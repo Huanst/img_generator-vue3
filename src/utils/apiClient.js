@@ -1,16 +1,27 @@
 import axios from 'axios'
 import { API_BASE_URL, getApiUrl } from './urlUtils'
 import { ElMessage } from 'element-plus'
+import { 
+  isWeChatBrowser, 
+  getWeChatAxiosConfig, 
+  handleWeChatNetworkError,
+  wechatRetryRequest 
+} from './wechatCompat'
 
 // 创建axios实例
-const apiClient = axios.create({
-  // 统一使用固定的API地址
+const baseConfig = {
   baseURL: API_BASE_URL,
-  timeout: 15000, // 请求超时时间
+  timeout: 15000,
   headers: {
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
   },
-  withCredentials: true, // 允许跨域请求携带凭证
+  withCredentials: true // 允许跨域请求携带凭证
+}
+
+// 合并微信浏览器特殊配置
+const apiClient = axios.create({
+  ...baseConfig,
+  ...getWeChatAxiosConfig()
 })
 
 // 请求拦截器
@@ -117,18 +128,35 @@ apiClient.interceptors.response.use(
       }
     } else if (error.request) {
       // 请求发出但没有响应
-      if (error.message && error.message.includes('Network Error')) {
+      // 尝试使用微信专用错误处理
+      const wechatErrorMsg = handleWeChatNetworkError(error)
+      if (wechatErrorMsg) {
         ElMessage({
           type: 'error',
-          message: '网络错误，可能是跨域(CORS)问题或服务器无法连接',
+          message: wechatErrorMsg,
           duration: 5000,
         })
       } else {
-        ElMessage({
-          type: 'error',
-          message: '无法连接到服务器，请检查网络连接',
-          duration: 3000,
-        })
+        // 通用错误处理
+        if (error.message && error.message.includes('Network Error')) {
+          ElMessage({
+            type: 'error',
+            message: '网络错误，可能是跨域(CORS)问题或服务器无法连接',
+            duration: 5000,
+          })
+        } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          ElMessage({
+            type: 'error',
+            message: '请求超时，请检查网络连接',
+            duration: 3000,
+          })
+        } else {
+          ElMessage({
+            type: 'error',
+            message: '无法连接到服务器，请检查网络连接',
+            duration: 3000,
+          })
+        }
       }
     } else {
       // 请求设置时出错

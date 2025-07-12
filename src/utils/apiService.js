@@ -1,4 +1,6 @@
 import apiClient from './apiClient'
+import { getApiUrl } from './urlUtils'
+import { isWeChatBrowser, wechatRetryRequest } from './wechatCompat'
 
 /**
  * 用户认证相关API
@@ -111,7 +113,10 @@ export const imageAPI = {
    * @returns {Promise} API响应
    */
   generate(params) {
-    return apiClient.post('/generate-image', params)
+    const requestFn = () => apiClient.post('/generate-image', params)
+    return isWeChatBrowser() 
+      ? wechatRetryRequest(requestFn, 2, 2000) // 微信浏览器重试2次，间隔2秒
+      : requestFn()
   },
 
   /**
@@ -119,7 +124,10 @@ export const imageAPI = {
    * @returns {Promise} API响应
    */
   getHistory() {
-    return apiClient.get('/image/history')
+    const requestFn = () => apiClient.get('/image/history')
+    return isWeChatBrowser() 
+      ? wechatRetryRequest(requestFn, 1, 1000) // 微信浏览器重试1次
+      : requestFn()
   },
 }
 
