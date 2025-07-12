@@ -206,15 +206,7 @@ const getImageSize = () => {
     return props.imageSize
   }
 
-  // 尝试从图片获取尺寸
-  if (props.images && props.images.length > 0) {
-    const img = new Image()
-    img.src = props.images[0].url
-    if (img.width && img.height) {
-      return `${img.width}×${img.height}`
-    }
-  }
-
+  // 如果没有传入尺寸信息，返回默认值
   return '未知'
 }
 

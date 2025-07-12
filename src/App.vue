@@ -290,11 +290,14 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove)
 })
 
+// 添加响应式的图像尺寸数据
+const imageSize = ref(null)
+
 const handleImagesGenerated = data => {
   generatedImages.value = data.data || []
   // 保存图像尺寸信息
   if (data.imageSize) {
-    generatedImages.value.imageSize = data.imageSize
+    imageSize.value = data.imageSize
   }
   scrollToResults()
 }
@@ -361,6 +364,7 @@ const scrollToElementSafely = (targetSelector, options = {}) => {
 // 清空生成的图像结果
 const clearGeneratedImages = () => {
   generatedImages.value = []
+  imageSize.value = null
 }
 </script>
 
@@ -400,16 +404,6 @@ const clearGeneratedImages = () => {
       <template v-else-if="currentPage === 'main'">
         <header class="app-header">
           <div class="user-info">
-            <!-- 已登录用户的功能按钮 -->
-            <div v-if="userState.isLoggedIn" class="history-button-container">
-              <button class="history-button" @click="handleHistory" title="历史记录">
-                <svg class="icon" aria-hidden="true">
-                  <use xlink:href="#icon-lishi"></use>
-                </svg>
-              </button>
-
-            </div>
-            
             <!-- 未登录用户显示登录按钮 -->
             <div v-if="!userState.isLoggedIn" class="guest-actions">
               <button class="login-btn" @click="goToLogin">
@@ -423,41 +417,50 @@ const clearGeneratedImages = () => {
             </div>
             
             <!-- 已登录用户显示头像和菜单 -->
-            <div v-if="userState.isLoggedIn" class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
-              <div class="user-avatar">
-                <img :src="userAvatarUrl" 
-                     :alt="userState.userInfo?.username" 
-                     class="avatar-image"
-                     @error="handleAvatarError" />
-              </div>
-              <transition name="menu-fade">
-                <div v-show="showUserMenu" class="user-dropdown-menu">
-                  <div class="menu-header">
-                    <div class="user-name">{{ userState.userInfo?.username }}</div>
-                    <div class="user-email">{{ userState.userInfo?.email || '用户' }}</div>
-                  </div>
-                  <div class="menu-divider"></div>
-                  <div class="menu-items">
-                    <div class="menu-item" @click="handleProfile">
-                      <i class="icon-user"></i>
-                      <span>个人中心</span>
-                    </div>
-                    <div class="menu-item" @click="handleSettings">
-                      <i class="icon-settings"></i>
-                      <span>设置</span>
-                    </div>
-                    <div class="menu-item" @click="toggleTheme">
-                      <i :class="isDarkMode ? 'icon-sun' : 'icon-moon'"></i>
-                      <span>{{ isDarkMode ? '浅色模式' : '深色模式' }}</span>
+            <div v-if="userState.isLoggedIn" class="user-section">
+              <div class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
+                <div class="user-avatar">
+                  <img :src="userAvatarUrl" 
+                       :alt="userState.userInfo?.username" 
+                       class="avatar-image"
+                       @error="handleAvatarError" />
+                </div>
+                <transition name="menu-fade">
+                  <div v-show="showUserMenu" class="user-dropdown-menu">
+                    <div class="menu-header">
+                      <div class="user-name">{{ userState.userInfo?.username }}</div>
+                      <div class="user-email">{{ userState.userInfo?.email || '用户' }}</div>
                     </div>
                     <div class="menu-divider"></div>
-                    <div class="menu-item logout" @click="handleLogout">
-                      <i class="icon-logout"></i>
-                      <span>退出登录</span>
+                    <div class="menu-items">
+                      <div class="menu-item" @click="handleProfile">
+                        <i class="icon-user"></i>
+                        <span>个人中心</span>
+                      </div>
+                      <div class="menu-item" @click="handleSettings">
+                        <i class="icon-settings"></i>
+                        <span>设置</span>
+                      </div>
+                      <div class="menu-item" @click="toggleTheme">
+                        <i :class="isDarkMode ? 'icon-sun' : 'icon-moon'"></i>
+                        <span>{{ isDarkMode ? '浅色模式' : '深色模式' }}</span>
+                      </div>
+                      <div class="menu-divider"></div>
+                      <div class="menu-item logout" @click="handleLogout">
+                        <i class="icon-logout"></i>
+                        <span>退出登录</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </transition>
+                </transition>
+              </div>
+              
+              <!-- 已登录用户的功能按钮 -->
+              <div class="history-button-container">
+                <button class="history-button" @click="handleHistory" title="历史记录">
+                  <span class="history-text">历史记录</span>
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -486,7 +489,7 @@ const clearGeneratedImages = () => {
               <div class="results-section" v-if="generatedImages.length">
                 <result-display
                   :images="generatedImages"
-                  :imageSize="generatedImages.imageSize"
+                  :imageSize="imageSize"
                   @close="clearGeneratedImages" />
               </div>
             </transition>
@@ -892,6 +895,13 @@ body {
   background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
 }
 
+/* 用户区域布局 */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 /* 历史记录按钮样式 */
 .history-button-container {
   position: relative;
@@ -901,31 +911,39 @@ body {
 }
 
 .history-button {
-  width: 36px;
-  height: 36px;
-  border-radius: 50% !important;
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-  border: 2px solid var(--accent-color);
-  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-color);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
   flex-shrink: 0;
-  padding: 0;
+  white-space: nowrap;
 }
 
 .history-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .history-button:active {
   transform: scale(0.95);
+}
+
+.history-text {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* 模态框样式 */

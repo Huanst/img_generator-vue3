@@ -63,21 +63,26 @@
             <div v-if="selectedSize === 'custom'" class="custom-size-inputs">
               <el-input-number
                 v-model="width"
-                :min="256"
+                :min="1024"
                 :max="1280"
-                :step="64"
+                :step="256"
                 :disabled="loading"
                 @change="updateSelectedSize"
-                class="size-input" />
+                class="size-input"
+                placeholder="宽度" />
               <span class="size-separator">×</span>
               <el-input-number
                 v-model="height"
-                :min="256"
+                :min="1024"
                 :max="1280"
-                :step="64"
+                :step="256"
                 :disabled="loading"
                 @change="updateSelectedSize"
-                class="size-input" />
+                class="size-input"
+                placeholder="高度" />
+            </div>
+            <div v-if="selectedSize === 'custom'" class="size-hint">
+              <small>提示：仅支持 1024×1024、1024×1280、1280×1024、1280×1280 四种尺寸</small>
             </div>
           </div>
         </el-form-item>
@@ -220,15 +225,12 @@ onUnmounted(() => {
   }
 })
 
-// 预设的分辨率选项
+// 预设的分辨率选项（与后端API支持的尺寸保持一致）
 const sizeOptions = [
-  { value: '1280x1280', label: '1280×1280', width: 1280, height: 1280 },
-  { value: '1024x1024', label: '1024×1024', width: 1024, height: 1024 },
-  { value: '960x1280', label: '960×1280', width: 960, height: 1280 },
-  { value: '1280x960', label: '1280×960', width: 1280, height: 960 },
-  { value: '768x1024', label: '768×1024', width: 768, height: 1024 },
-  { value: '720x1440', label: '720×1440', width: 720, height: 1440 },
-  { value: '720x1280', label: '720×1280', width: 720, height: 1280 },
+  { value: '1280x1280', label: '1280×1280 (正方形)', width: 1280, height: 1280 },
+  { value: '1024x1024', label: '1024×1024 (正方形)', width: 1024, height: 1024 },
+  { value: '1280x1024', label: '1280×1024 (横向)', width: 1280, height: 1024 },
+  { value: '1024x1280', label: '1024×1280 (竖向)', width: 1024, height: 1280 },
   { value: 'custom', label: '自定义尺寸' },
 ]
 
@@ -251,6 +253,13 @@ const updateSelectedSize = () => {
   selectedSize.value = matchedOption ? matchedOption.value : 'custom'
 }
 
+// 验证自定义尺寸是否有效
+const isValidCustomSize = () => {
+  const validSizes = ['1024x1024', '1280x1280', '1024x1280', '1280x1024']
+  const currentSize = `${width.value}x${height.value}`
+  return validSizes.includes(currentSize)
+}
+
 const emit = defineEmits(['imagesGenerated', 'error', 'toggleTheme'])
 
 // 处理主题切换
@@ -260,6 +269,14 @@ const handleToggleTheme = () => {
 
 const generateImage = async () => {
   if (!prompt.value.trim()) {
+    return
+  }
+
+  // 验证自定义尺寸
+  if (selectedSize.value === 'custom' && !isValidCustomSize()) {
+    emit('error', {
+      message: '不支持的图片尺寸，请选择预设尺寸或使用有效的自定义尺寸：1024×1024、1024×1280、1280×1024、1280×1280'
+    })
     return
   }
 
@@ -851,6 +868,17 @@ watch([width, height], () => {
 .size-separator {
   font-weight: 600;
   margin: 0 4px;
+}
+
+.size-hint {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.size-hint small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .count-select {
