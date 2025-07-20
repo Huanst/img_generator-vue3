@@ -149,30 +149,31 @@ const handleUsernameInput = async () => {
   if (avatarLoadingTimer.value) {
     clearTimeout(avatarLoadingTimer.value)
   }
-  
+
   // 如果用户名为空，清除头像
   if (!loginForm.username.trim()) {
     userAvatar.value = ''
     return
   }
-  
+
+  // 暂时禁用头像获取功能，避免影响登录
   // 防抖处理，500ms后执行
-  avatarLoadingTimer.value = setTimeout(async () => {
-    try {
-      // 尝试获取用户头像
-      const response = await userAPI.getAvatar(loginForm.username)
-      
-      // 如果响应是图片，创建blob URL
-      if (response.data && response.data.type.startsWith('image/')) {
-        userAvatar.value = URL.createObjectURL(response.data)
-      } else {
-        userAvatar.value = ''
-      }
-    } catch (error) {
-      // console.log('获取头像失败:', error)
-      userAvatar.value = ''
-    }
-  }, 500)
+  // avatarLoadingTimer.value = setTimeout(async () => {
+  //   try {
+  //     // 尝试获取用户头像
+  //     const response = await userAPI.getAvatar(loginForm.username)
+  //
+  //     // 如果响应包含头像信息
+  //     if (response.data && response.data.status === 'success' && response.data.data.avatarUrl) {
+  //       userAvatar.value = response.data.data.avatarUrl
+  //     } else {
+  //       userAvatar.value = ''
+  //     }
+  //   } catch (error) {
+  //     // console.log('获取头像失败:', error)
+  //     userAvatar.value = ''
+  //   }
+  // }, 500)
 }
 
 // 处理登录逻辑

@@ -35,7 +35,7 @@
 
 
           <!-- 头像上传 -->
-          <el-form-item label="头像">
+          <el-form-item label="头像" class="avatar-form-item">
             <div class="avatar-upload">
               <div class="avatar-preview" @click="triggerFileInput">
                 <img v-if="avatarPreview" :src="avatarPreview" alt="头像预览" class="avatar-img" />
@@ -511,7 +511,27 @@ const goBack = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
+  width: 100%;
+}
+
+/* 确保头像表单项居中 */
+.avatar-form-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-form-item .el-form-item__content {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.avatar-form-item .el-form-item__label {
+  text-align: center;
+  width: 100%;
 }
 
 .avatar-preview {
@@ -563,11 +583,39 @@ const goBack = () => {
   text-align: center;
 }
 
+/* 浅色模式下的头像上传样式 */
+:root[data-theme='light'] .avatar-preview {
+  border: 2px dashed rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .avatar-preview:hover {
+  border-color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme='light'] .avatar-placeholder {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme='light'] .avatar-tips {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* 浅色模式下的按钮边框调整 */
+:root[data-theme='light'] .back-btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='light'] .theme-btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 600px) {
   .register-card-wrapper {
     padding: 10px;
   }
-  
+
   .avatar-preview {
     width: 80px;
     height: 80px;

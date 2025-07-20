@@ -110,9 +110,14 @@ onUnmounted(() => {
 
 /* 亮色模式下调整样式 */
 :root[data-theme='light'] .primary {
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.08),
+    0 2px 16px 0 rgba(0, 0, 0, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
 :root[data-theme='light'] .dark {

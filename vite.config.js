@@ -15,9 +15,9 @@ export default defineConfig({
     host: '0.0.0.0', // 允许局域网访问
     port: 5174, // 端口号
     proxy: {
-      // 将本地 /api 请求代理到 huanst.cn/api
+      // 使用环境变量配置代理目标
       '/api': {
-        target: 'https://huanst.cn', // 使用固定的后端地址
+        target: process.env.VITE_API_SERVER_URL || 'https://huanst.cn',
         changeOrigin: true,
         secure: true,
       },

@@ -1,6 +1,4 @@
 import apiClient from './apiClient'
-import { getApiUrl } from './urlUtils'
-import { isWeChatBrowser, wechatRetryRequest } from './wechatCompat'
 
 /**
  * 用户认证相关API
@@ -65,15 +63,13 @@ export const userAPI = {
   },
 
   /**
-   * 获取用户头像
+   * 获取用户头像信息
    * @param {string} username - 用户名（可选）
    * @returns {Promise} API响应
    */
   getAvatar(username = null) {
     const url = username ? `/user/avatar?username=${encodeURIComponent(username)}` : '/user/avatar'
-    return apiClient.get(url, {
-      responseType: 'blob'
-    })
+    return apiClient.get(url)
   },
 
   /**
@@ -113,10 +109,7 @@ export const imageAPI = {
    * @returns {Promise} API响应
    */
   generate(params) {
-    const requestFn = () => apiClient.post('/generate-image', params)
-    return isWeChatBrowser() 
-      ? wechatRetryRequest(requestFn, 2, 2000) // 微信浏览器重试2次，间隔2秒
-      : requestFn()
+    return apiClient.post('/generate-image', params)
   },
 
   /**
@@ -124,10 +117,7 @@ export const imageAPI = {
    * @returns {Promise} API响应
    */
   getHistory() {
-    const requestFn = () => apiClient.get('/image/history')
-    return isWeChatBrowser() 
-      ? wechatRetryRequest(requestFn, 1, 1000) // 微信浏览器重试1次
-      : requestFn()
+    return apiClient.get('/image/history')
   },
 }
 

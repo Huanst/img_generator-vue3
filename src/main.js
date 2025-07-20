@@ -6,17 +6,10 @@ import App from './App.vue'
 import axios from 'axios'
 import './style.css'
 import { API_BASE_URL } from '@/utils/urlUtils'
-import { initWeChatCompat, isWeChatBrowser } from '@/utils/wechatCompat'
 
 // 输出环境信息
 // console.log('应用环境:', import.meta.env.MODE)
 // console.log('API基础URL:', API_BASE_URL)
-
-// 检测并初始化微信浏览器兼容性
-if (isWeChatBrowser()) {
-  console.log('📱 检测到微信浏览器，启用兼容性处理')
-  initWeChatCompat()
-}
 
 // 配置Axios请求拦截器
 axios.interceptors.request.use(

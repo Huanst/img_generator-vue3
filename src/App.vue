@@ -6,13 +6,11 @@ import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
 import HistoryModal from './components/HistoryModal.vue'
-import WeChatTip from './components/WeChatTip.vue'
 
 import { userState, userActions } from '@/utils/userStore'
 import { healthAPI } from '@/utils/apiService'
 import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlUtils'
 import { ElMessage } from 'element-plus'
-import { isWeChatBrowser } from '@/utils/wechatCompat'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
@@ -194,9 +192,14 @@ const handleCloseHistory = () => {
 
 // 获取用户头像URL（计算属性，确保响应式更新）
 const userAvatarUrl = computed(() => {
+  // 确保用户已登录且用户信息存在
+  if (!userState.isLoggedIn || !userState.userInfo) {
+    return defaultAvatarUrl.value
+  }
+
   // 优先使用avatar_url字段，如果没有则使用avatarUrl字段（向后兼容）
-  const avatarPath = userState.userInfo?.avatar_url || userState.userInfo?.avatarUrl
-  
+  const avatarPath = userState.userInfo.avatar_url || userState.userInfo.avatarUrl
+
   if (avatarPath) {
     // 如果已经是完整URL，直接返回
     if (avatarPath.startsWith('http')) {
@@ -275,11 +278,6 @@ onMounted(() => {
   // 检查剪贴板API可用性
   if (!navigator.clipboard) {
     // console.warn('浏览器不支持剪贴板API，复制功能可能不可用')
-  }
-
-  // 检测微信浏览器并添加CSS类
-  if (isWeChatBrowser()) {
-    document.body.classList.add('wechat-browser')
   }
 
   // 初始化主题设置
@@ -377,9 +375,6 @@ const clearGeneratedImages = () => {
 
 <template>
   <div class="app-container">
-    <!-- 微信浏览器提示 -->
-    <WeChatTip />
-    
     <!-- 背景层 -->
     <div class="app-background"></div>
     <div class="mouse-glow"></div>
@@ -553,10 +548,10 @@ const clearGeneratedImages = () => {
     --secondary-color: #2980b9;
     --accent-color: #0078cc;
     --background-dark: #f0f4f8;
-    --card-bg: rgba(255, 255, 255, 0.75);
+    --card-bg: rgba(255, 255, 255, 0.25);
     --text-color: #1a1a2e;
     --text-secondary: rgba(0, 0, 0, 0.65);
-    --border-color: rgba(0, 0, 0, 0.1);
+    --border-color: rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -583,24 +578,26 @@ const clearGeneratedImages = () => {
   --secondary-color: #2196f3;
   --accent-color: #42a5f5;
   --background-dark: #ffffff;
-  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: rgba(255, 255, 255, 0.25);
   --text-color: #2c3e50;
   --text-secondary: rgba(44, 62, 80, 0.7);
-  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color: rgba(255, 255, 255, 0.3);
   --slider-track-bg: rgba(0, 0, 0, 0.08);
   --slider-track-bg-hover: rgba(0, 0, 0, 0.12);
   --background-dark-translucent: rgba(240, 244, 248, 0.8);
-  --border-color-translucent: rgba(0, 0, 0, 0.1);
+  --border-color-translucent: rgba(255, 255, 255, 0.3);
 }
 
 /* 优化卡片玻璃态效果 */
 :root[data-theme='light'] .glassmorphic-card {
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
-  background: var(--card-bg) !important;
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 16px rgba(0, 0, 0, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* 重置基础样式 */
@@ -873,8 +870,9 @@ body {
 .register-btn {
   padding: 8px 16px;
   border-radius: 20px;
-  border: 2px solid var(--accent-color);
-  background: transparent;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: var(--text-color);
   cursor: pointer;
   transition: all 0.3s ease;
@@ -884,24 +882,26 @@ body {
   align-items: center;
   gap: 6px;
   white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
 }
 
 .login-btn:hover {
-  background: var(--accent-color);
-  color: white;
+  background: rgba(255, 255, 255, 0.15);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 201, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 .register-btn {
   background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-  color: white;
   border-color: transparent;
+  color: white;
 }
 
 .register-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(83, 82, 237, 0.4);
+  box-shadow: 0 6px 20px rgba(83, 82, 237, 0.3);
   background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
 }
 
@@ -1379,35 +1379,7 @@ body {
   opacity: 0.5;
 }
 
-/* 微信浏览器特殊样式 */
-.wechat-browser {
-  /* 防止微信浏览器的橡皮筋效果 */
-  body {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-  
-  #app {
-    height: 100vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  
-  /* 隐藏微信浏览器的分享按钮区域 */
-  .el-header {
-    padding-top: env(safe-area-inset-top, 0);
-  }
-  
-  /* 优化微信浏览器的输入框体验 */
-  input, textarea {
-    -webkit-user-select: text;
-    user-select: text;
-  }
-}
-
-/* 全局移动端优化样式 */
+/* 移动端全局优化 */
 @media (max-width: 768px) {
   /* 优化触摸目标大小 */
   button, .el-button, .action-btn, .menu-item {

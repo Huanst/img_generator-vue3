@@ -13,7 +13,7 @@
           class="theme-btn"
           :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
           <i class="theme-icon" :class="{ 'is-dark': isDarkMode }">
-            {{ isDarkMode ? '🌙' : '☀️' }}
+            {{ isDarkMode ? '☀️' : '🌙' }}
           </i>
         </button>
       </div>
@@ -632,6 +632,17 @@ watch([width, height], () => {
   height: var(--el-slider-button-size);
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 浅色模式下的滑块按钮磨砂玻璃效果 */
+:root[data-theme='light'] :deep(.el-slider__button) {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 :deep(.el-slider__button:hover) {

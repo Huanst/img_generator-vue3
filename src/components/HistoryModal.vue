@@ -164,12 +164,20 @@ const closeModal = () => {
  * @param {number} limit - 每页数量
  */
 const loadHistory = async (page = 1, limit = 10) => {
-  // console.log('开始加载历史记录...', { page, limit })
-      // console.log('用户token:', userState.token ? '存在' : '不存在')
-      // console.log('API_SERVER_URL:', API_SERVER_URL)
+  // 确保参数是数字
+  const pageNum = Number(page) || 1
+  const limitNum = Number(limit) || 10
+  console.log('开始加载历史记录...', { pageNum, limitNum })
+  console.log('用户状态:', {
+    isLoggedIn: userState.isLoggedIn,
+    hasToken: !!userState.token,
+    tokenLength: userState.token ? userState.token.length : 0,
+    userInfo: userState.userInfo
+  })
+  console.log('API_SERVER_URL:', API_SERVER_URL)
   
   if (!userState.token) {
-    // console.error('用户未登录，无法加载历史记录')
+    console.error('用户未登录，无法加载历史记录')
     error.value = '请先登录'
     return
   }
@@ -178,8 +186,8 @@ const loadHistory = async (page = 1, limit = 10) => {
   error.value = ''
 
   try {
-    const url = `${API_SERVER_URL}/api/image-history?page=${page}&limit=${limit}`
-    // console.log('请求URL:', url)
+    const url = `${API_SERVER_URL}/api/image-history?page=${pageNum}&limit=${limitNum}`
+    console.log('请求URL:', url)
     
     const response = await fetch(url, {
       method: 'GET',
@@ -189,15 +197,24 @@ const loadHistory = async (page = 1, limit = 10) => {
       }
     })
 
-    // console.log('响应状态:', response.status)
-        // console.log('响应头:', response.headers)
-    
-    const data = await response.json()
-    // console.log('响应数据:', data)
+    console.log('响应状态:', response.status)
+    console.log('响应头:', response.headers)
 
-    if (data.status === 'success') {
+    const data = await response.json()
+    console.log('响应数据完整内容:', JSON.stringify(data, null, 2))
+    console.log('data.success:', data.success, '(类型:', typeof data.success, ')')
+    console.log('data.success === true:', data.success === true)
+    console.log('data.message:', data.message)
+
+    if (data.success === true) {
       historyItems.value = data.data.items || []
-      Object.assign(pagination, data.data.pagination || {})
+      // 更新分页信息
+      if (data.data.pagination) {
+        pagination.page = Number(data.data.pagination.page) || 1
+        pagination.limit = Number(data.data.pagination.limit) || 10
+        pagination.total = Number(data.data.pagination.total) || 0
+        pagination.totalPages = Number(data.data.pagination.totalPages) || 0
+      }
       // console.log('历史记录加载成功:', historyItems.value.length, '条记录')
       
       // 检查每个图片URL的有效性
@@ -217,11 +234,11 @@ const loadHistory = async (page = 1, limit = 10) => {
         }
       })
     } else {
-      // console.error('API返回错误:', data.message)
+      console.error('API返回错误:', data.message)
       error.value = data.message || '加载历史记录失败'
     }
   } catch (err) {
-    // console.error('加载历史记录失败:', err)
+    console.error('加载历史记录失败:', err)
     error.value = '网络错误，请稍后重试'
   } finally {
     loading.value = false
@@ -233,8 +250,9 @@ const loadHistory = async (page = 1, limit = 10) => {
  * @param {number} newPage - 新页码
  */
 const changePage = (newPage) => {
-  if (newPage >= 1 && newPage <= pagination.totalPages) {
-    loadHistory(newPage, pagination.limit)
+  const pageNum = Number(newPage)
+  if (pageNum >= 1 && pageNum <= pagination.totalPages) {
+    loadHistory(pageNum, pagination.limit)
   }
 }
 
@@ -379,7 +397,7 @@ const deleteImage = async (imageId) => {
 
     const data = await response.json()
 
-    if (data.status === 'success') {
+    if (data.success === true) {
       // 从列表中移除已删除的项目
       historyItems.value = historyItems.value.filter(item => item.id !== imageId)
       
@@ -486,6 +504,14 @@ onMounted(() => {
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
+}
+
+/* 浅色模式下的模态框主体样式 */
+:root[data-theme='light'] .history-modal {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
 /* 模态框头部 */
@@ -624,6 +650,24 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 
+/* 浅色模式下的历史记录项样式 */
+:root[data-theme='light'] .history-item {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .history-item:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* 浅色模式下的图片占位符和错误状态样式 */
+:root[data-theme='light'] .image-placeholder {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme='light'] .image-error {
+  background: rgba(0, 0, 0, 0.08);
+}
+
 /* 图片预览 */
 .image-preview {
   flex-shrink: 0;
@@ -689,6 +733,11 @@ onMounted(() => {
   color: var(--text-secondary);
   font-size: 24px;
   border-radius: 6px;
+}
+
+/* 浅色模式下的绝对定位图片占位符样式 */
+:root[data-theme='light'] .image-placeholder {
+  background: rgba(0, 0, 0, 0.08);
 }
 
 /* 历史记录信息 */

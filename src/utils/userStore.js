@@ -22,7 +22,8 @@ export const userActions = {
     try {
       const response = await authAPI.login(credentials)
       
-      if (response.data.status === 'success') {
+      // 修复：后端返回的是 success 字段，不是 status 字段
+      if (response.data.success === true) {
         const { token, user } = response.data.data
         
         // 更新状态
@@ -93,7 +94,7 @@ export const userActions = {
     try {
       const response = await authAPI.register(userData)
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true) {
         ElMessage({
           type: 'success',
           message: response.data.message || '注册成功，请登录',
@@ -173,7 +174,7 @@ export const userActions = {
     try {
       const response = await authAPI.validateToken()
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true) {
         // 更新用户信息
         if (response.data.data?.user) {
           userState.userInfo = response.data.data.user
@@ -228,7 +229,7 @@ export const userActions = {
     try {
       const response = await userAPI.getProfile()
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true) {
         userState.userInfo = response.data.data.user
         
         // 更新本地存储中的用户信息
