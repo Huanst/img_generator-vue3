@@ -31,17 +31,32 @@
             </el-tooltip>
           </div>
         </template>
-        <el-input
-          v-model="prompt"
-          type="textarea"
-          :rows="3"
-          resize="none"
-          placeholder="描述你想要生成的图片..."
-          :disabled="loading"
-          @keydown.enter.prevent="handleGenerate"
-          class="fixed-height-textarea" />
-        <div class="character-count" :class="{ warning: prompt.length > 950 }">
-          {{ prompt.length }}/1000
+        <div class="textarea-container">
+          <el-input
+            v-model="prompt"
+            type="textarea"
+            :rows="4"
+            resize="none"
+            placeholder="描述你想要生成的图片..."
+            :disabled="loading"
+            @keydown.enter.prevent="handleGenerate"
+            class="fixed-height-textarea" />
+          <div class="textarea-footer">
+            <el-button
+              @click="generateRandomPrompt"
+              :loading="promptGenerating"
+              :disabled="loading"
+              class="random-prompt-btn"
+              size="small"
+              type="primary"
+              :icon="MagicStick"
+              title="生成随机提示词">
+              生成提示词
+            </el-button>
+            <div class="character-count" :class="{ warning: prompt.length > 950 }">
+              {{ prompt.length }}/1000
+            </div>
+          </div>
         </div>
       </el-form-item>
 
@@ -196,6 +211,7 @@ import {
 } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import apiClient from '@/utils/apiClient'
+import { imageAPI } from '@/utils/apiService'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -206,6 +222,7 @@ const props = defineProps({
 })
 
 const loading = ref(false)
+const promptGenerating = ref(false)
 const showAdditionalOptions = ref(false)
 const prompt = ref('')
 const width = ref(1280)
@@ -224,6 +241,35 @@ onUnmounted(() => {
     cleanupFunction()
   }
 })
+
+// 生成随机提示词
+const generateRandomPrompt = async () => {
+  if (promptGenerating.value) return
+
+  try {
+    promptGenerating.value = true
+    console.log('开始生成随机提示词...')
+
+    const response = await imageAPI.generatePrompt()
+    console.log('API响应:', response)
+
+    if (response.data && response.data.status === 'success') {
+      prompt.value = response.data.data.prompt
+      console.log('提示词生成成功:', response.data.data.prompt)
+    } else {
+      console.error('API返回错误:', response.data)
+      throw new Error(response.data?.message || '生成提示词失败')
+    }
+  } catch (error) {
+    console.error('生成随机提示词失败:', error)
+    console.error('错误详情:', error.response?.data)
+    // 使用更友好的错误提示
+    const errorMsg = error.response?.data?.message || error.message || '生成随机提示词失败，请稍后重试'
+    alert(errorMsg)
+  } finally {
+    promptGenerating.value = false
+  }
+}
 
 // 预设的分辨率选项（与后端API支持的尺寸保持一致）
 const sizeOptions = [
@@ -545,11 +591,53 @@ watch([width, height], () => {
   color: var(--text-color);
 }
 
+.textarea-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.textarea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.random-prompt-btn {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 16px !important;
+  border-radius: 16px !important;
+  background: var(--primary-color) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(83, 82, 237, 0.3) !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.random-prompt-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(83, 82, 237, 0.4) !important;
+}
+
+.random-prompt-btn:active {
+  transform: translateY(0) !important;
+}
+
+.random-prompt-btn .el-icon {
+  font-size: 12px !important;
+}
+
 .character-count {
-  text-align: right;
   font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 4px;
+  font-weight: 500;
 }
 
 .character-count.warning {
@@ -977,11 +1065,30 @@ watch([width, height], () => {
 
   /* 优化文本输入框在小屏幕上的显示 */
   .fixed-height-textarea :deep(.el-textarea__inner) {
-    height: 60px !important;
-    min-height: 60px !important;
-    max-height: 60px !important;
+    height: 80px !important;
+    min-height: 80px !important;
+    max-height: 80px !important;
     font-size: 16px; /* 防止iOS缩放 */
-    padding: 10px;
+    padding: 12px;
+  }
+
+  .textarea-container {
+    max-width: 100%;
+  }
+
+  .textarea-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .random-prompt-btn {
+    width: 100% !important;
+    justify-content: center;
+  }
+
+  .character-count {
+    text-align: center;
   }
 
   /* 优化选择器在小屏幕上的显示 */
@@ -1129,22 +1236,23 @@ watch([width, height], () => {
 
 /* 固定高度的文字输入框样式 */
 .fixed-height-textarea :deep(.el-textarea__inner) {
-  height: 72px !important;
-  min-height: 72px !important;
-  max-height: 72px !important;
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
   line-height: 1.5;
   overflow-y: auto;
   resize: none !important;
-  padding: 8px 12px;
+  padding: 12px 16px;
   font-size: 14px;
+  border-radius: 8px;
 }
 
 /* 确保文字输入框在不同状态下保持固定高度 */
 .fixed-height-textarea :deep(.el-textarea__inner):focus {
-  height: 72px !important;
+  height: 96px !important;
 }
 
 .fixed-height-textarea :deep(.el-textarea__inner):disabled {
-  height: 72px !important;
+  height: 96px !important;
 }
 </style>

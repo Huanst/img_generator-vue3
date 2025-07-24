@@ -6,7 +6,7 @@ import { ElMessage } from 'element-plus'
 const apiClient = axios.create({
   // 统一使用固定的API地址
   baseURL: API_BASE_URL,
-  timeout: 15000, // 请求超时时间
+  timeout: 30000, // 请求超时时间增加到30秒，适应AI模型响应时间
   headers: {
     'Content-Type': 'application/json',
   },

@@ -113,6 +113,14 @@ export const imageAPI = {
   },
 
   /**
+   * 生成随机提示词
+   * @returns {Promise} API响应
+   */
+  generatePrompt() {
+    return apiClient.post('/generate-prompt')
+  },
+
+  /**
    * 获取用户的图片生成历史（预留接口）
    * @returns {Promise} API响应
    */
