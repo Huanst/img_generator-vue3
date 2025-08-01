@@ -248,48 +248,25 @@ const handleRegister = async () => {
       loading.value = true
 
       try {
-        // 先注册用户（不包含头像）
-        const registerData = {
-          username: registerForm.username,
-          email: registerForm.email,
-          password: registerForm.password
+        // 创建FormData以支持文件上传
+        const formData = new FormData()
+        formData.append('username', registerForm.username)
+        formData.append('email', registerForm.email)
+        formData.append('password', registerForm.password)
+
+        // 如果有头像文件，添加到FormData中
+        if (avatarFile.value) {
+          formData.append('avatar', avatarFile.value)
         }
 
-        const registerResponse = await authAPI.register(registerData)
+        // 调用注册API，支持文件上传
+        const registerResponse = await authAPI.registerWithAvatar(formData)
         const registerResult = registerResponse.data
-        
+
         if (registerResult.success) {
-          // 如果有头像文件，单独上传头像
-          if (avatarFile.value) {
-            try {
-              // 先登录获取token
-              const loginResponse = await authAPI.login({
-                username: registerForm.username,
-                password: registerForm.password
-              })
-              
-              const loginResult = loginResponse.data
-              
-              if (loginResult.success) {
-                // 保存token到本地存储
-                localStorage.setItem('auth_token', loginResult.token)
-                
-                // 上传头像
-                const avatarFormData = new FormData()
-                avatarFormData.append('avatar', avatarFile.value)
-                
-                await userAPI.uploadAvatar(avatarFormData)
-                
-                // console.log('头像上传成功')
-              }
-            } catch (avatarError) {
-              // console.warn('头像上传失败:', avatarError)
-            }
-          }
-          
           loading.value = false
           ElMessage.success('注册成功！')
-          
+
           // 发送注册成功事件
           emit('register-success', {
             username: registerForm.username,
@@ -306,8 +283,8 @@ const handleRegister = async () => {
         }
       } catch (error) {
         loading.value = false
-        // console.error('注册请求失败:', error)
-        
+        console.error('注册请求失败:', error)
+
         // 处理具体的错误信息
         if (error.response && error.response.data) {
           ElMessage.error(error.response.data.message || '注册失败，请重试')

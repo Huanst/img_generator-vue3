@@ -11,6 +11,10 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
   withCredentials: true, // 允许跨域请求携带凭证
+  validateStatus: function (status) {
+    // 接受 200-299 状态码为成功
+    return status >= 200 && status < 300;
+  }
 })
 
 // 请求拦截器

@@ -18,6 +18,19 @@ export const authAPI = {
   },
 
   /**
+   * 用户注册（支持头像上传）
+   * @param {FormData} formData - 包含username, email, password和avatar的FormData
+   * @returns {Promise} API响应
+   */
+  registerWithAvatar(formData) {
+    return apiClient.post('/auth/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  /**
    * 用户登录
    * @param {Object} credentials - 登录凭据
    * @param {string} credentials.username - 用户名

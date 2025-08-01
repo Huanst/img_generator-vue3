@@ -5,17 +5,19 @@ import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
+import SettingsPage from './components/SettingsPage.vue'
 import HistoryModal from './components/HistoryModal.vue'
 
 import { userState, userActions } from '@/utils/userStore'
 import { healthAPI } from '@/utils/apiService'
 import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlUtils'
 import { ElMessage } from 'element-plus'
+import { useI18n } from '@/utils/i18nService'
 
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
-const currentPage = ref('main') // 当前页面: login, register, main, profile, debug
+const currentPage = ref('main') // 当前页面: login, register, main, profile, settings, debug
 const showUserMenu = ref(false) // 控制用户菜单显示
 const showHistoryModal = ref(false) // 控制历史记录模态框显示
 
@@ -25,6 +27,9 @@ const defaultAvatarUrl = ref('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhl
 // 暴露到全局作用域以便调试
 window.userState = userState
 window.userActions = userActions
+
+// 使用国际化
+const { t } = useI18n()
 
 // 检测系统主题偏好
 const detectSystemTheme = () => {
@@ -161,9 +166,13 @@ const handleBackFromRegister = () => {
 
 // 处理设置
 const handleSettings = () => {
-  // 这里可以添加设置页面的逻辑
-  // console.log('打开设置')
+  currentPage.value = 'settings'
   showUserMenu.value = false
+}
+
+// 从设置页面返回主页面
+const handleBackFromSettings = () => {
+  currentPage.value = 'main'
 }
 
 /**
@@ -243,12 +252,12 @@ const checkStoredLogin = async () => {
 watch(
   () => userState.userInfo,
   (newUserInfo, oldUserInfo) => {
-    // console.log('用户信息变化:', {
-    //   old: oldUserInfo,
-    //   new: newUserInfo,
-    //   avatarUrl: newUserInfo?.avatar_url || newUserInfo?.avatarUrl,
-    //   computedAvatarUrl: userAvatarUrl.value
-    // })
+    console.log('用户信息变化:', {
+      old: oldUserInfo,
+      new: newUserInfo,
+      avatarUrl: newUserInfo?.avatar_url || newUserInfo?.avatarUrl,
+      computedAvatarUrl: userAvatarUrl.value
+    })
   },
   { deep: true }
 )
@@ -257,7 +266,7 @@ watch(
 watch(
   userAvatarUrl,
   (newUrl, oldUrl) => {
-    // console.log('头像URL变化:', { old: oldUrl, new: newUrl })
+    console.log('头像URL变化:', { old: oldUrl, new: newUrl })
   }
 )
 
@@ -404,6 +413,14 @@ const clearGeneratedImages = () => {
           :isDarkMode="isDarkMode"
           :toggleTheme="toggleTheme"
           @back="handleBackFromProfile" />
+      </template>
+
+      <template v-else-if="currentPage === 'settings'">
+        <settings-page
+          :isDarkMode="isDarkMode"
+          :toggleTheme="toggleTheme"
+          @back="handleBackFromSettings"
+          @toggleTheme="toggleTheme" />
       </template>
 
       <template v-else-if="currentPage === 'main'">

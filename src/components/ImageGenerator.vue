@@ -209,6 +209,7 @@ import {
   ArrowDown,
   Expand,
 } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import apiClient from '@/utils/apiClient'
 import { imageAPI } from '@/utils/apiService'
@@ -253,9 +254,17 @@ const generateRandomPrompt = async () => {
     const response = await imageAPI.generatePrompt()
     console.log('API响应:', response)
 
+    // 检查API响应状态
     if (response.data && response.data.status === 'success') {
-      prompt.value = response.data.data.prompt
-      console.log('提示词生成成功:', response.data.data.prompt)
+      prompt.value = response.data.prompt
+      console.log('提示词生成成功:', response.data.prompt)
+      console.log('提示词来源:', response.data.source)
+      
+      // 显示成功消息
+      ElMessage({
+        type: 'success',
+        message: '提示词生成成功'
+      })
     } else {
       console.error('API返回错误:', response.data)
       throw new Error(response.data?.message || '生成提示词失败')
@@ -263,9 +272,30 @@ const generateRandomPrompt = async () => {
   } catch (error) {
     console.error('生成随机提示词失败:', error)
     console.error('错误详情:', error.response?.data)
-    // 使用更友好的错误提示
-    const errorMsg = error.response?.data?.message || error.message || '生成随机提示词失败，请稍后重试'
-    alert(errorMsg)
+    
+    // 根据不同的错误类型显示不同的错误消息
+    let errorMsg = '生成随机提示词失败，请稍后重试'
+    
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+      
+      if (status === 500 && data?.message?.includes('API密钥未配置')) {
+        errorMsg = 'API密钥未配置，请联系管理员'
+      } else if (status === 408 || data?.message?.includes('超时')) {
+        errorMsg = 'SiliconFlow API请求超时，请稍后重试'
+      } else if (data?.message) {
+        errorMsg = data.message
+      }
+    } else if (error.message) {
+      errorMsg = error.message
+    }
+    
+    ElMessage({
+      type: 'error',
+      message: errorMsg,
+      duration: 5000 // 错误消息显示5秒
+    })
   } finally {
     promptGenerating.value = false
   }

@@ -6,6 +6,7 @@ import App from './App.vue'
 import axios from 'axios'
 import './style.css'
 import { API_BASE_URL } from '@/utils/urlUtils'
+import { i18nService } from '@/utils/i18nService'
 
 // 输出环境信息
 // console.log('应用环境:', import.meta.env.MODE)
@@ -68,6 +69,12 @@ app.use(ElementPlus)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+
+// 初始化国际化服务
+i18nService.loadLocaleFromStorage()
+
+// 设置页面标题
+document.title = i18nService.t('app.title')
 
 // 挂载应用
 app.mount('#app')
