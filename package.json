@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "preview:prod": "vite preview --mode production",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "clean:console": "node scripts/replace-console.js",
+    "build:clean": "npm run clean:console && npm run build"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -26,6 +28,7 @@
     "@vue/tsconfig": "^0.5.1",
     "eslint": "^8.56.0",
     "eslint-plugin-vue": "^9.21.1",
+    "terser": "^5.36.0",
     "typescript": "^5.3.3",
     "vite": "^6.2.0",
     "vue-tsc": "^1.8.27"
