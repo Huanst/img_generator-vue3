@@ -88,7 +88,7 @@ import { User, Lock, UserFilled } from '@element-plus/icons-vue'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import { ElMessage, ElLoading } from 'element-plus'
 import { userActions } from '@/utils/userStore'
-import { userAPI } from '@/utils/apiservice'
+import { userAPI } from '@/utils/apiService'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({

@@ -109,7 +109,7 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { userState } from '@/utils/userStore'
-import { API_SERVER_URL } from '@/utils/urlutils'
+import { API_SERVER_URL } from '@/utils/urlUtils'
 
 /**
  * 组件属性定义
