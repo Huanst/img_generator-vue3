@@ -6,9 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "vite build --mode production",
+    "build:dev": "vite build --mode development",
     "preview": "vite preview",
+    "preview:prod": "vite preview --mode production",
+    "serve": "vite preview",
+    "start": "vite",
+    "start:prod": "vite preview --mode production --port 4173",
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "type-check": "vue-tsc --noEmit"
+    "type-check": "vue-tsc --noEmit",
+    "clean": "rm -rf dist",
+    "build:clean": "npm run clean && npm run build:prod"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
