@@ -23,8 +23,13 @@ dist-ssr
 *.sln
 *.sw?
 
+# 环境配置文件
 .env.local
 .env.*.local
+
+# 保留开发和生产环境配置文件，但忽略本地配置
+# .env.development  # 保留在版本控制中
+# .env.production   # 保留在版本控制中
 
 # GitHub workflow directory
 .github/

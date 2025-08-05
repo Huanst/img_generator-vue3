@@ -8,10 +8,10 @@ const isViteEnv = typeof import.meta !== 'undefined' && import.meta.env
 const isNodeEnv = typeof process !== 'undefined' && process.env
 
 // 开发环境使用本地API服务器
-if ((isViteEnv && import.meta.env.MODE === 'development') || 
+if ((isViteEnv && import.meta.env.MODE === 'development') ||
     (isNodeEnv && process.env.NODE_ENV === 'development')) {
-  API_BASE_URL = 'http://localhost:5002/api/'
-  API_SERVER_URL = 'http://localhost:5002'
+  API_BASE_URL = 'http://localhost:5004/api/'
+  API_SERVER_URL = 'http://localhost:5004'
 }
 
 // 也可以通过环境变量覆盖

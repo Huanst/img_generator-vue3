@@ -18,6 +18,19 @@ export const authAPI = {
   },
 
   /**
+   * 用户注册（支持头像上传）
+   * @param {FormData} formData - 包含username, email, password和avatar的FormData
+   * @returns {Promise} API响应
+   */
+  registerWithAvatar(formData) {
+    return apiClient.post('/auth/register', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+
+  /**
    * 用户登录
    * @param {Object} credentials - 登录凭据
    * @param {string} credentials.username - 用户名
@@ -63,15 +76,13 @@ export const userAPI = {
   },
 
   /**
-   * 获取用户头像
+   * 获取用户头像信息
    * @param {string} username - 用户名（可选）
    * @returns {Promise} API响应
    */
   getAvatar(username = null) {
     const url = username ? `/user/avatar?username=${encodeURIComponent(username)}` : '/user/avatar'
-    return apiClient.get(url, {
-      responseType: 'blob'
-    })
+    return apiClient.get(url)
   },
 
   /**
@@ -112,6 +123,14 @@ export const imageAPI = {
    */
   generate(params) {
     return apiClient.post('/generate-image', params)
+  },
+
+  /**
+   * 生成随机提示词
+   * @returns {Promise} API响应
+   */
+  generatePrompt() {
+    return apiClient.post('/generate-prompt')
   },
 
   /**

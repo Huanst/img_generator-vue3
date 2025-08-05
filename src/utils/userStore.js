@@ -22,7 +22,8 @@ export const userActions = {
     try {
       const response = await authAPI.login(credentials)
       
-      if (response.data.status === 'success') {
+      // 修复：后端返回的是 success 字段，不是 status 字段
+      if (response.data.success === true) {
         const { token, user } = response.data.data
         
         // 更新状态
@@ -49,7 +50,7 @@ export const userActions = {
         throw new Error(response.data.message || '登录失败')
       }
     } catch (error) {
-      console.error('登录错误:', error)
+      // console.error('登录错误:', error)
       
       let errorMessage = '登录失败，请重试'
       
@@ -93,7 +94,7 @@ export const userActions = {
     try {
       const response = await authAPI.register(userData)
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true) {
         ElMessage({
           type: 'success',
           message: response.data.message || '注册成功，请登录',
@@ -105,7 +106,7 @@ export const userActions = {
         throw new Error(response.data.message || '注册失败')
       }
     } catch (error) {
-      console.error('注册失败:', error)
+      // console.error('注册失败:', error)
       
       let errorMessage = '注册失败，请稍后重试'
       
@@ -173,7 +174,7 @@ export const userActions = {
     try {
       const response = await authAPI.validateToken()
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true) {
         // 更新用户信息
         if (response.data.data?.user) {
           userState.userInfo = response.data.data.user
@@ -183,7 +184,7 @@ export const userActions = {
         throw new Error('Token无效')
       }
     } catch (error) {
-      console.error('Token验证失败:', error)
+      // console.error('Token验证失败:', error)
       this.logout()
       return { success: false }
     }
@@ -211,7 +212,7 @@ export const userActions = {
         
         return validationResult.success
       } catch (error) {
-        console.error('恢复用户状态失败:', error)
+        // console.error('恢复用户状态失败:', error)
         this.logout()
         return false
       }
@@ -228,7 +229,7 @@ export const userActions = {
     try {
       const response = await userAPI.getProfile()
       
-      if (response.data.status === 'success') {
+      if (response.data.success === true) {
         userState.userInfo = response.data.data.user
         
         // 更新本地存储中的用户信息
@@ -240,7 +241,7 @@ export const userActions = {
         throw new Error('获取用户信息失败')
       }
     } catch (error) {
-      console.error('获取用户信息错误:', error)
+      // console.error('获取用户信息错误:', error)
       return { success: false, error: error.message }
     }
   },

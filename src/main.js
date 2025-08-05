@@ -5,16 +5,22 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import axios from 'axios'
 import './style.css'
+<<<<<<< HEAD
 import { API_BASE_URL } from '@/utils/urlUtils.js'
+=======
+import { API_BASE_URL } from '@/utils/urlUtils'
+import { i18nService } from '@/utils/i18nService'
+import Logger from '@/utils/logger'
+>>>>>>> bugfix
 
 // 输出环境信息
-console.log('应用环境:', import.meta.env.MODE)
-console.log('API基础URL:', API_BASE_URL)
+Logger.info('应用环境:', import.meta.env.MODE)
+Logger.info('API基础URL:', API_BASE_URL)
 
 // 配置Axios请求拦截器
 axios.interceptors.request.use(
   config => {
-    console.log('API请求发送:', {
+    Logger.debug('API请求发送:', {
       url: config.url,
       method: config.method,
       headers: {
@@ -25,7 +31,7 @@ axios.interceptors.request.use(
     return config
   },
   error => {
-    console.error('API请求配置错误:', error)
+    Logger.error('API请求配置错误:', error)
     return Promise.reject(error)
   }
 )
@@ -33,7 +39,7 @@ axios.interceptors.request.use(
 // 配置Axios响应拦截器
 axios.interceptors.response.use(
   response => {
-    console.log('API响应成功:', {
+    Logger.debug('API响应成功:', {
       url: response.config.url,
       status: response.status,
       statusText: response.statusText,
@@ -42,7 +48,7 @@ axios.interceptors.response.use(
     return response
   },
   error => {
-    console.error('API响应错误:', {
+    Logger.error('API响应错误:', {
       url: error.config?.url,
       message: error.message,
       code: error.code,
@@ -68,6 +74,12 @@ app.use(ElementPlus)
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+
+// 初始化国际化服务
+i18nService.loadLocaleFromStorage()
+
+// 设置页面标题
+document.title = i18nService.t('app.title')
 
 // 挂载应用
 app.mount('#app')

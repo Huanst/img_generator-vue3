@@ -13,7 +13,7 @@
           class="theme-btn"
           :title="isDarkMode ? '切换到亮色模式' : '切换到暗色模式'">
           <i class="theme-icon" :class="{ 'is-dark': isDarkMode }">
-            {{ isDarkMode ? '🌙' : '☀️' }}
+            {{ isDarkMode ? '☀️' : '🌙' }}
           </i>
         </button>
       </div>
@@ -31,17 +31,32 @@
             </el-tooltip>
           </div>
         </template>
-        <el-input
-          v-model="prompt"
-          type="textarea"
-          :rows="3"
-          resize="none"
-          placeholder="描述你想要生成的图片..."
-          :disabled="loading"
-          @keydown.enter.prevent="handleGenerate"
-          class="fixed-height-textarea" />
-        <div class="character-count" :class="{ warning: prompt.length > 950 }">
-          {{ prompt.length }}/1000
+        <div class="textarea-container">
+          <el-input
+            v-model="prompt"
+            type="textarea"
+            :rows="4"
+            resize="none"
+            placeholder="描述你想要生成的图片..."
+            :disabled="loading"
+            @keydown.enter.prevent="handleGenerate"
+            class="fixed-height-textarea" />
+          <div class="textarea-footer">
+            <el-button
+              @click="generateRandomPrompt"
+              :loading="promptGenerating"
+              :disabled="loading"
+              class="random-prompt-btn"
+              size="small"
+              type="primary"
+              :icon="MagicStick"
+              title="生成随机提示词">
+              生成提示词
+            </el-button>
+            <div class="character-count" :class="{ warning: prompt.length > 950 }">
+              {{ prompt.length }}/1000
+            </div>
+          </div>
         </div>
       </el-form-item>
 
@@ -63,21 +78,26 @@
             <div v-if="selectedSize === 'custom'" class="custom-size-inputs">
               <el-input-number
                 v-model="width"
-                :min="256"
+                :min="1024"
                 :max="1280"
-                :step="64"
+                :step="256"
                 :disabled="loading"
                 @change="updateSelectedSize"
-                class="size-input" />
+                class="size-input"
+                placeholder="宽度" />
               <span class="size-separator">×</span>
               <el-input-number
                 v-model="height"
-                :min="256"
+                :min="1024"
                 :max="1280"
-                :step="64"
+                :step="256"
                 :disabled="loading"
                 @change="updateSelectedSize"
-                class="size-input" />
+                class="size-input"
+                placeholder="高度" />
+            </div>
+            <div v-if="selectedSize === 'custom'" class="size-hint">
+              <small>提示：仅支持 1024×1024、1024×1280、1280×1024、1280×1280 四种尺寸</small>
             </div>
           </div>
         </el-form-item>
@@ -189,8 +209,10 @@ import {
   ArrowDown,
   Expand,
 } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import GlassmorphicCard from './GlassmorphicCard.vue'
 import apiClient from '@/utils/apiClient'
+import { imageAPI } from '@/utils/apiService'
 
 // 接收从父组件传来的isDarkMode和toggleTheme
 const props = defineProps({
@@ -201,6 +223,7 @@ const props = defineProps({
 })
 
 const loading = ref(false)
+const promptGenerating = ref(false)
 const showAdditionalOptions = ref(false)
 const prompt = ref('')
 const width = ref(1280)
@@ -220,15 +243,70 @@ onUnmounted(() => {
   }
 })
 
-// 预设的分辨率选项
+// 生成随机提示词
+const generateRandomPrompt = async () => {
+  if (promptGenerating.value) return
+
+  try {
+    promptGenerating.value = true
+    console.log('开始生成随机提示词...')
+
+    const response = await imageAPI.generatePrompt()
+    console.log('API响应:', response)
+
+    // 检查API响应状态
+    if (response.data && response.data.status === 'success') {
+      prompt.value = response.data.prompt
+      console.log('提示词生成成功:', response.data.prompt)
+      console.log('提示词来源:', response.data.source)
+      
+      // 显示成功消息
+      ElMessage({
+        type: 'success',
+        message: '提示词生成成功'
+      })
+    } else {
+      console.error('API返回错误:', response.data)
+      throw new Error(response.data?.message || '生成提示词失败')
+    }
+  } catch (error) {
+    console.error('生成随机提示词失败:', error)
+    console.error('错误详情:', error.response?.data)
+    
+    // 根据不同的错误类型显示不同的错误消息
+    let errorMsg = '生成随机提示词失败，请稍后重试'
+    
+    if (error.response) {
+      const status = error.response.status
+      const data = error.response.data
+      
+      if (status === 500 && data?.message?.includes('API密钥未配置')) {
+        errorMsg = 'API密钥未配置，请联系管理员'
+      } else if (status === 408 || data?.message?.includes('超时')) {
+        errorMsg = 'SiliconFlow API请求超时，请稍后重试'
+      } else if (data?.message) {
+        errorMsg = data.message
+      }
+    } else if (error.message) {
+      errorMsg = error.message
+    }
+    
+    ElMessage({
+      type: 'error',
+      message: errorMsg,
+      duration: 5000 // 错误消息显示5秒
+    })
+  } finally {
+    promptGenerating.value = false
+  }
+}
+
+// 预设的分辨率选项（与后端API支持的尺寸保持一致）
 const sizeOptions = [
-  { value: '1280x1280', label: '1280×1280', width: 1280, height: 1280 },
-  { value: '1024x1024', label: '1024×1024', width: 1024, height: 1024 },
-  { value: '960x1280', label: '960×1280', width: 960, height: 1280 },
-  { value: '1280x960', label: '1280×960', width: 1280, height: 960 },
-  { value: '768x1024', label: '768×1024', width: 768, height: 1024 },
-  { value: '720x1440', label: '720×1440', width: 720, height: 1440 },
-  { value: '720x1280', label: '720×1280', width: 720, height: 1280 },
+  { value: '1280x1280', label: '1280×1280 (正方形)', width: 1280, height: 1280 },
+  { value: '1024x1024', label: '1024×1024 (正方形)', width: 1024, height: 1024 },
+  { value: '1280x1024', label: '1280×1024 (横向)', width: 1280, height: 1024 },
+  { value: '1024x1280', label: '1024×1280 (竖向)', width: 1024, height: 1280 },
   { value: 'custom', label: '自定义尺寸' },
 ]
 
@@ -251,6 +329,13 @@ const updateSelectedSize = () => {
   selectedSize.value = matchedOption ? matchedOption.value : 'custom'
 }
 
+// 验证自定义尺寸是否有效
+const isValidCustomSize = () => {
+  const validSizes = ['1024x1024', '1280x1280', '1024x1280', '1280x1024']
+  const currentSize = `${width.value}x${height.value}`
+  return validSizes.includes(currentSize)
+}
+
 const emit = defineEmits(['imagesGenerated', 'error', 'toggleTheme'])
 
 // 处理主题切换
@@ -260,6 +345,14 @@ const handleToggleTheme = () => {
 
 const generateImage = async () => {
   if (!prompt.value.trim()) {
+    return
+  }
+
+  // 验证自定义尺寸
+  if (selectedSize.value === 'custom' && !isValidCustomSize()) {
+    emit('error', {
+      message: '不支持的图片尺寸，请选择预设尺寸或使用有效的自定义尺寸：1024×1024、1024×1280、1280×1024、1280×1280'
+    })
     return
   }
 
@@ -319,7 +412,7 @@ const generateImage = async () => {
     if (logParams.prompt) {
       logParams.prompt = logParams.prompt.substring(0, 20) + '...'
     }
-    console.log('正在请求图像生成，参数:', JSON.stringify(logParams))
+    // console.log('正在请求图像生成，参数:', JSON.stringify(logParams))
 
     // 发送请求到本地API
     const response = await apiClient.post('/generate-image', requestParams)
@@ -327,7 +420,7 @@ const generateImage = async () => {
     // 如果组件已卸载，不继续处理
     if (!isMounted) return
 
-    console.log('API响应状态:', response.status)
+    // console.log('API响应状态:', response.status)
 
     // 检查响应数据
     if (
@@ -335,13 +428,13 @@ const generateImage = async () => {
       !response.data.data ||
       !Array.isArray(response.data.data)
     ) {
-      console.error('API响应格式错误:', response.data)
+      // console.error('API响应格式错误:', response.data)
       throw new Error('服务器返回的数据格式不正确')
     }
 
     // 检查是否有图片URL
     if (response.data.data.length === 0 || !response.data.data[0].url) {
-      console.error('API未返回图片URL:', response.data)
+      // console.error('API未返回图片URL:', response.data)
       throw new Error('未能获取到图片URL')
     }
 
@@ -353,16 +446,16 @@ const generateImage = async () => {
     // 如果组件已卸载，不继续处理错误
     if (!isMounted) return
 
-    console.error('图像生成失败:', error)
+    // console.error('图像生成失败:', error)
 
     // 增强错误信息
     if (error.response) {
       // 服务器响应了错误状态码
-      console.error('API错误响应:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-      })
+      // console.error('API错误响应:', {
+      //   status: error.response.status,
+      //   statusText: error.response.statusText,
+      //   data: error.response.data,
+      // })
       emit('error', {
         message: `API错误 (${error.response.status}): ${
           error.response.data?.error?.message ||
@@ -372,7 +465,7 @@ const generateImage = async () => {
       })
     } else if (error.request) {
       // 请求已发送但没有收到响应
-      console.error('API无响应:', error.request)
+      // console.error('API无响应:', error.request)
       emit('error', { message: '服务器无响应，请检查网络连接' })
     } else {
       // 请求配置或其他错误
@@ -528,11 +621,53 @@ watch([width, height], () => {
   color: var(--text-color);
 }
 
+.textarea-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.textarea-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
+.random-prompt-btn {
+  height: 32px !important;
+  min-height: 32px !important;
+  padding: 0 16px !important;
+  border-radius: 16px !important;
+  background: var(--primary-color) !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(83, 82, 237, 0.3) !important;
+  transition: all 0.3s ease !important;
+  font-size: 12px !important;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.random-prompt-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(83, 82, 237, 0.4) !important;
+}
+
+.random-prompt-btn:active {
+  transform: translateY(0) !important;
+}
+
+.random-prompt-btn .el-icon {
+  font-size: 12px !important;
+}
+
 .character-count {
-  text-align: right;
   font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 4px;
+  font-weight: 500;
 }
 
 .character-count.warning {
@@ -615,6 +750,17 @@ watch([width, height], () => {
   height: var(--el-slider-button-size);
   transition: all 0.2s ease;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 浅色模式下的滑块按钮磨砂玻璃效果 */
+:root[data-theme='light'] :deep(.el-slider__button) {
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 :deep(.el-slider__button:hover) {
@@ -853,6 +999,17 @@ watch([width, height], () => {
   margin: 0 4px;
 }
 
+.size-hint {
+  margin-top: 8px;
+  text-align: center;
+}
+
+.size-hint small {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .count-select {
   width: 100%;
 }
@@ -872,10 +1029,136 @@ watch([width, height], () => {
   justify-content: center;
 }
 
+/* 小屏幕手机优化 */
+@media (max-width: 480px) {
+  .generator-header {
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .generator-title {
+    font-size: 1.3rem;
+    text-align: center;
+  }
+
+  .header-actions {
+    gap: 12px;
+  }
+
+  .tech-icon-container {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tech-icon {
+    font-size: 18px;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+
+  .form-item-col {
+    margin-bottom: 12px;
+  }
+
+  .custom-size-inputs {
+    gap: 6px;
+  }
+
+  .size-input {
+    width: 80px;
+  }
+
+  .generate-btn {
+    max-width: none;
+    padding: 12px 20px;
+    font-size: 16px;
+    margin-top: 8px;
+  }
+
+  .slider-container {
+    margin: 8px 0;
+  }
+
+  .options-title {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+
+  .additional-options {
+    margin-bottom: 16px;
+  }
+
+  /* 优化文本输入框在小屏幕上的显示 */
+  .fixed-height-textarea :deep(.el-textarea__inner) {
+    height: 80px !important;
+    min-height: 80px !important;
+    max-height: 80px !important;
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 12px;
+  }
+
+  .textarea-container {
+    max-width: 100%;
+  }
+
+  .textarea-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .random-prompt-btn {
+    width: 100% !important;
+    justify-content: center;
+  }
+
+  .character-count {
+    text-align: center;
+  }
+
+  /* 优化选择器在小屏幕上的显示 */
+  :deep(.el-select) {
+    width: 100%;
+  }
+
+  :deep(.el-select .el-input__inner) {
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 0 12px;
+  }
+
+  /* 优化数字输入框 */
+  .number-control {
+    padding: 6px;
+  }
+
+  .number-display {
+    font-size: 18px;
+    min-width: 50px;
+  }
+
+  /* 优化滑块 */
+  .guidance-scale-slider,
+  .steps-slider {
+    width: calc(100% - 50px);
+  }
+
+  .slider-value {
+    min-width: 40px;
+    font-size: 16px;
+  }
+}
+
+/* 中等屏幕手机和小平板优化 */
 @media (max-width: 768px) {
   .form-row {
     flex-direction: column;
     gap: 0;
+    margin-bottom: 14px;
   }
 
   .generator-title {
@@ -884,6 +1167,43 @@ watch([width, height], () => {
 
   .generate-btn {
     max-width: none;
+    padding: 14px 24px;
+    font-size: 16px;
+  }
+
+  .form-item-col {
+    margin-bottom: 14px;
+  }
+
+  .custom-size-inputs {
+    gap: 8px;
+  }
+
+  .size-input {
+    width: 90px;
+  }
+
+  /* 优化触摸目标大小 */
+  :deep(.el-button) {
+    min-height: 44px;
+  }
+
+  :deep(.el-input__inner) {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  :deep(.el-select .el-input__inner) {
+    min-height: 44px;
+  }
+
+  /* 优化间距 */
+  .additional-options {
+    margin-bottom: 18px;
+  }
+
+  .slider-container {
+    margin: 12px 0;
   }
 }
 
@@ -946,22 +1266,23 @@ watch([width, height], () => {
 
 /* 固定高度的文字输入框样式 */
 .fixed-height-textarea :deep(.el-textarea__inner) {
-  height: 72px !important;
-  min-height: 72px !important;
-  max-height: 72px !important;
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
   line-height: 1.5;
   overflow-y: auto;
   resize: none !important;
-  padding: 8px 12px;
+  padding: 12px 16px;
   font-size: 14px;
+  border-radius: 8px;
 }
 
 /* 确保文字输入框在不同状态下保持固定高度 */
 .fixed-height-textarea :deep(.el-textarea__inner):focus {
-  height: 72px !important;
+  height: 96px !important;
 }
 
 .fixed-height-textarea :deep(.el-textarea__inner):disabled {
-  height: 72px !important;
+  height: 96px !important;
 }
 </style>

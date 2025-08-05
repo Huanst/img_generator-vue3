@@ -3,6 +3,15 @@
     <div class="register-card-wrapper">
       <glassmorphic-card variant="primary" :showGlow="true">
         <div class="register-header">
+          <div class="back-button">
+            <button
+              @click="goBack"
+              class="back-btn"
+              title="返回主页">
+              <i class="back-icon">←</i>
+            </button>
+          </div>
+          
           <h2 class="register-title">用户注册</h2>
 
           <div class="theme-toggle">
@@ -26,7 +35,7 @@
 
 
           <!-- 头像上传 -->
-          <el-form-item label="头像">
+          <el-form-item label="头像" class="avatar-form-item">
             <div class="avatar-upload">
               <div class="avatar-preview" @click="triggerFileInput">
                 <img v-if="avatarPreview" :src="avatarPreview" alt="头像预览" class="avatar-img" />
@@ -120,7 +129,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['toggleTheme', 'register-success', 'login'])
+const emit = defineEmits(['toggleTheme', 'register-success', 'login', 'back'])
 
 // 表单引用
 const registerFormRef = ref(null)
@@ -239,58 +248,69 @@ const handleRegister = async () => {
       loading.value = true
 
       try {
-        // 先注册用户（不包含头像）
-        const registerData = {
-          username: registerForm.username,
-          email: registerForm.email,
-          password: registerForm.password
+        // 创建FormData以支持文件上传
+        const formData = new FormData()
+        formData.append('username', registerForm.username)
+        formData.append('email', registerForm.email)
+        formData.append('password', registerForm.password)
+
+        // 如果有头像文件，添加到FormData中
+        if (avatarFile.value) {
+          formData.append('avatar', avatarFile.value)
         }
 
-        const registerResponse = await authAPI.register(registerData)
+        // 调用注册API，支持文件上传
+        const registerResponse = await authAPI.registerWithAvatar(formData)
         const registerResult = registerResponse.data
-        
+
         if (registerResult.success) {
-          // 如果有头像文件，单独上传头像
-          if (avatarFile.value) {
-            try {
-              // 先登录获取token
-              const loginResponse = await authAPI.login({
-                username: registerForm.username,
-                password: registerForm.password
-              })
-              
-              const loginResult = loginResponse.data
-              
-              if (loginResult.success) {
-                // 保存token到本地存储
-                localStorage.setItem('auth_token', loginResult.token)
-                
-                // 上传头像
-                const avatarFormData = new FormData()
-                avatarFormData.append('avatar', avatarFile.value)
-                
-                await userAPI.uploadAvatar(avatarFormData)
-                
-                console.log('头像上传成功')
-              }
-            } catch (avatarError) {
-              console.warn('头像上传失败:', avatarError)
-            }
-          }
-          
           loading.value = false
-          ElMessage.success('注册成功！')
           
+          // 显示成功消息
+          ElMessage.success('注册成功！')
+
           // 发送注册成功事件
           emit('register-success', {
             username: registerForm.username,
             email: registerForm.email,
           })
 
-          // 延迟跳转到登录页
-          setTimeout(() => {
-            goToLogin()
-          }, 1500)
+          // 显示跳转倒计时提示
+          let countdown = 3
+          let countdownTimer = null
+          
+          const showCountdown = () => {
+            if (countdown > 0) {
+              ElMessage({
+                type: 'info',
+                message: `${countdown} 秒后自动跳转到登录页面...`,
+                duration: 1000,
+                showClose: false
+              })
+              countdown--
+              countdownTimer = setTimeout(showCountdown, 1000)
+            } else {
+                goToLogin()
+              }
+          }
+          
+          // 显示立即跳转提示
+          ElMessage({
+            type: 'success',
+            message: '注册成功！点击此处立即跳转到登录页面',
+            duration: 4000,
+            showClose: true,
+            onClick: () => {
+              // 清除倒计时
+              if (countdownTimer) {
+                clearTimeout(countdownTimer)
+              }
+              goToLogin()
+            }
+          })
+          
+          // 开始倒计时
+          setTimeout(showCountdown, 1000)
         } else {
           loading.value = false
           ElMessage.error(registerResult.message || '注册失败，请重试')
@@ -298,7 +318,7 @@ const handleRegister = async () => {
       } catch (error) {
         loading.value = false
         console.error('注册请求失败:', error)
-        
+
         // 处理具体的错误信息
         if (error.response && error.response.data) {
           ElMessage.error(error.response.data.message || '注册失败，请重试')
@@ -313,6 +333,11 @@ const handleRegister = async () => {
 // 跳转到登录页面
 const goToLogin = () => {
   emit('login')
+}
+
+// 返回主页
+const goBack = () => {
+  emit('back')
 }
 
 
@@ -353,6 +378,38 @@ const goToLogin = () => {
   position: relative;
 }
 
+.back-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.back-btn {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-color, #fff);
+}
+
+.back-btn:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: translateX(-2px);
+}
+
+.back-icon {
+  font-size: 18px;
+  line-height: 1;
+  font-style: normal;
+}
+
 .register-title {
   color: var(--text-color, #fff);
   font-weight: 600;
@@ -360,6 +417,7 @@ const goToLogin = () => {
   letter-spacing: 1px;
   text-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   flex: 1;
+  text-align: center;
 }
 
 
@@ -464,7 +522,27 @@ const goToLogin = () => {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 12px;
+  width: 100%;
+}
+
+/* 确保头像表单项居中 */
+.avatar-form-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-form-item .el-form-item__content {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.avatar-form-item .el-form-item__label {
+  text-align: center;
+  width: 100%;
 }
 
 .avatar-preview {
@@ -516,11 +594,39 @@ const goToLogin = () => {
   text-align: center;
 }
 
+/* 浅色模式下的头像上传样式 */
+:root[data-theme='light'] .avatar-preview {
+  border: 2px dashed rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+:root[data-theme='light'] .avatar-preview:hover {
+  border-color: var(--primary-color);
+  background: rgba(0, 0, 0, 0.08);
+}
+
+:root[data-theme='light'] .avatar-placeholder {
+  color: rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme='light'] .avatar-tips {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* 浅色模式下的按钮边框调整 */
+:root[data-theme='light'] .back-btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:root[data-theme='light'] .theme-btn {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 @media (max-width: 600px) {
   .register-card-wrapper {
     padding: 10px;
   }
-  
+
   .avatar-preview {
     width: 80px;
     height: 80px;

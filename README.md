@@ -34,7 +34,7 @@
 │   ├── components/             # 公共组件
 │   │   ├── ImageGenerator.vue  # 图片生成组件
 │   │   ├── HistoryModal.vue    # 历史记录模态框
-│   │   ├── ImageLoadTest.vue   # 图片加载测试工具
+
 │   │   └── ...                 # 其他组件
 │   ├── utils/                  # 工具函数
 │   │   ├── apiClient.js        # API 客户端

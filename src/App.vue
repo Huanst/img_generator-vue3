@@ -5,25 +5,34 @@ import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
+import SettingsPage from './components/SettingsPage.vue'
 import HistoryModal from './components/HistoryModal.vue'
-import ImageLoadTest from './components/ImageLoadTest.vue'
+
 import { userState, userActions } from '@/utils/userStore'
 import { healthAPI } from '@/utils/apiService'
 import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlUtils'
+<<<<<<< HEAD
+=======
+import { ElMessage } from 'element-plus'
+import { useI18n } from '@/utils/i18nService'
+>>>>>>> bugfix
 
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
-const currentPage = ref('login') // 当前页面: login, register, main, profile, debug
+const currentPage = ref('main') // 当前页面: login, register, main, profile, settings, debug
 const showUserMenu = ref(false) // 控制用户菜单显示
 const showHistoryModal = ref(false) // 控制历史记录模态框显示
-const showImageTestModal = ref(false) // 控制图片测试工具模态框显示
+
 const defaultAvatarUrl = ref('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIyMCIgZmlsbD0idXJsKCNncmFkaWVudCkiLz4KICA8Y2lyY2xlIGN4PSIyMCIgY3k9IjE2IiByPSI2IiBmaWxsPSJ3aGl0ZSIgb3BhY2l0eT0iMC45Ii8+CiAgPHBhdGggZD0iTTggMzJjMC02LjYyNyA1LjM3My0xMiAxMi0xMnMxMiA1LjM3MyAxMiAxMiIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuOSIvPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkaWVudCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIxMDAlIiB5Mj0iMTAwJSI+CiAgICAgIDxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiM1MzUyZWQ7c3RvcC1vcGFjaXR5OjEiIC8+CiAgICAgIDxzdG9wIG9mZnNldD0iMTAwJSIgc3R5bGU9InN0b3AtY29sb3I6IzAwYzlmZjtzdG9wLW9wYWNpdHk6MSIgLz4KICAgIDwvbGluZWFyR3JhZGllbnQ+CiAgPC9kZWZzPgo8L3N2Zz4=')
 
 // 使用用户状态管理（保持响应性）
 // 暴露到全局作用域以便调试
 window.userState = userState
 window.userActions = userActions
+
+// 使用国际化
+const { t } = useI18n()
 
 // 检测系统主题偏好
 const detectSystemTheme = () => {
@@ -64,7 +73,7 @@ const setupThemeListener = () => {
 
 // 全局错误处理
 const handleGlobalError = event => {
-  console.error('全局错误:', event.error || event.message || '未知错误')
+  // console.error('全局错误:', event.error || event.message || '未知错误')
   if (event.error && event.error.message) {
     errorMessage.value = `浏览器错误: ${event.error.message}`
   }
@@ -72,7 +81,7 @@ const handleGlobalError = event => {
 
 // 全局Promise错误处理
 const handleUnhandledRejection = event => {
-  console.error('未处理的Promise错误:', event.reason)
+  // console.error('未处理的Promise错误:', event.reason)
   if (event.reason && event.reason.message) {
     errorMessage.value = `Promise错误: ${event.reason.message}`
   }
@@ -91,18 +100,22 @@ const handleMouseMove = e => {
 
 // 用户登录成功处理
 const handleLogin = async userData => {
-  console.log('登录成功，用户数据:', userData)
+  // console.log('登录成功，用户数据:', userData)
+  
+  // 清空未登录时生成的图片数据
+  clearGeneratedImages()
+  
   currentPage.value = 'main'
   
   // 用户状态已在userActions.login中更新
   // 添加小延迟确保DOM更新完成后再刷新用户信息
   setTimeout(async () => {
     try {
-      console.log('开始刷新用户信息...')
+      // console.log('开始刷新用户信息...')
       const result = await userActions.getUserProfile()
-      console.log('用户信息刷新结果:', result)
+      // console.log('用户信息刷新结果:', result)
     } catch (error) {
-      console.error('刷新用户信息失败:', error)
+      // console.error('刷新用户信息失败:', error)
     }
   }, 100)
 }
@@ -110,7 +123,7 @@ const handleLogin = async userData => {
 // 处理注册成功后的逻辑
 const handleRegisterSuccess = data => {
   // 这里可以保存一些注册信息
-  console.log('注册成功:', data)
+  // console.log('注册成功:', data)
 }
 
 // 切换到登录页面
@@ -125,6 +138,9 @@ const goToRegister = () => {
 
 // 用户登出
 const handleLogout = () => {
+  // 清空生成的图片数据
+  clearGeneratedImages()
+  
   userActions.logout()
   currentPage.value = 'login'
   showUserMenu.value = false
@@ -141,11 +157,25 @@ const handleBackFromProfile = () => {
   currentPage.value = 'main'
 }
 
+// 从登录页面返回主页面
+const handleBackFromLogin = () => {
+  currentPage.value = 'main'
+}
+
+// 从注册页面返回主页面
+const handleBackFromRegister = () => {
+  currentPage.value = 'main'
+}
+
 // 处理设置
 const handleSettings = () => {
-  // 这里可以添加设置页面的逻辑
-  console.log('打开设置')
+  currentPage.value = 'settings'
   showUserMenu.value = false
+}
+
+// 从设置页面返回主页面
+const handleBackFromSettings = () => {
+  currentPage.value = 'main'
 }
 
 /**
@@ -153,6 +183,15 @@ const handleSettings = () => {
  * 显示用户的图像生成历史记录
  */
 const handleHistory = () => {
+  if (!userState.isLoggedIn) {
+    // 未登录用户提示需要登录
+    ElMessage({
+      type: 'warning',
+      message: '查看历史记录需要先登录',
+      duration: 3000,
+    })
+    return
+  }
   showHistoryModal.value = true
 }
 
@@ -161,25 +200,18 @@ const handleCloseHistory = () => {
   showHistoryModal.value = false
 }
 
-/**
- * 处理图片测试按钮点击
- */
-const handleImageTest = () => {
-  showImageTestModal.value = true
-}
 
-/**
- * 关闭图片测试模态框
- */
-const handleCloseImageTest = () => {
-  showImageTestModal.value = false
-}
 
 // 获取用户头像URL（计算属性，确保响应式更新）
 const userAvatarUrl = computed(() => {
+  // 确保用户已登录且用户信息存在
+  if (!userState.isLoggedIn || !userState.userInfo) {
+    return defaultAvatarUrl.value
+  }
+
   // 优先使用avatar_url字段，如果没有则使用avatarUrl字段（向后兼容）
-  const avatarPath = userState.userInfo?.avatar_url || userState.userInfo?.avatarUrl
-  
+  const avatarPath = userState.userInfo.avatar_url || userState.userInfo.avatarUrl
+
   if (avatarPath) {
     // 如果已经是完整URL，直接返回
     if (avatarPath.startsWith('http')) {
@@ -198,7 +230,7 @@ const getUserAvatarUrl = () => {
 
 // 处理头像加载错误
 const handleAvatarError = (event) => {
-  console.log('头像加载失败，使用默认头像')
+  // console.log('头像加载失败，使用默认头像')
   event.target.src = defaultAvatarUrl.value
 }
 
@@ -207,12 +239,15 @@ const checkStoredLogin = async () => {
   try {
     const restored = await userActions.restoreFromStorage()
     if (restored) {
+      // 清空可能存在的未登录时的图片数据
+      clearGeneratedImages()
+      
       // 确保用户信息完全加载后再切换页面
       await userActions.getUserProfile()
       currentPage.value = 'main'
     }
   } catch (error) {
-    console.error('检查登录状态失败:', error)
+    // console.error('检查登录状态失败:', error)
   }
 }
 
@@ -248,13 +283,13 @@ onMounted(() => {
 
   // 检查浏览器兼容性
   if (!window.fetch) {
-    console.error('浏览器不支持Fetch API')
+    // console.error('浏览器不支持Fetch API')
     errorMessage.value = '您的浏览器不支持现代Web功能，请升级您的浏览器'
   }
 
   // 检查剪贴板API可用性
   if (!navigator.clipboard) {
-    console.warn('浏览器不支持剪贴板API，复制功能可能不可用')
+    // console.warn('浏览器不支持剪贴板API，复制功能可能不可用')
   }
 
   // 初始化主题设置
@@ -272,11 +307,14 @@ onUnmounted(() => {
   window.removeEventListener('mousemove', handleMouseMove)
 })
 
+// 添加响应式的图像尺寸数据
+const imageSize = ref(null)
+
 const handleImagesGenerated = data => {
   generatedImages.value = data.data || []
   // 保存图像尺寸信息
   if (data.imageSize) {
-    generatedImages.value.imageSize = data.imageSize
+    imageSize.value = data.imageSize
   }
   scrollToResults()
 }
@@ -343,6 +381,7 @@ const scrollToElementSafely = (targetSelector, options = {}) => {
 // 清空生成的图像结果
 const clearGeneratedImages = () => {
   generatedImages.value = []
+  imageSize.value = null
 }
 </script>
 
@@ -359,7 +398,8 @@ const clearGeneratedImages = () => {
           :isDarkMode="isDarkMode"
           @toggleTheme="toggleTheme"
           @login="handleLogin"
-          @register="goToRegister" />
+          @register="goToRegister"
+          @back="handleBackFromLogin" />
       </template>
 
       <template v-else-if="currentPage === 'register'">
@@ -367,7 +407,8 @@ const clearGeneratedImages = () => {
           :isDarkMode="isDarkMode"
           @toggleTheme="toggleTheme"
           @register-success="handleRegisterSuccess"
-          @login="goToLogin" />
+          @login="goToLogin"
+          @back="handleBackFromRegister" />
       </template>
 
       <template v-else-if="currentPage === 'profile' && userState.isLoggedIn">
@@ -377,54 +418,74 @@ const clearGeneratedImages = () => {
           @back="handleBackFromProfile" />
       </template>
 
-      <template v-else-if="currentPage === 'main' && userState.isLoggedIn">
+      <template v-else-if="currentPage === 'settings'">
+        <settings-page
+          :isDarkMode="isDarkMode"
+          :toggleTheme="toggleTheme"
+          @back="handleBackFromSettings"
+          @toggleTheme="toggleTheme" />
+      </template>
+
+      <template v-else-if="currentPage === 'main'">
         <header class="app-header">
           <div class="user-info">
-            <!-- 历史记录按钮 -->
-            <div class="history-button-container">
-              <button class="history-button" @click="handleHistory" title="历史记录">
-                <i class="icon-history"></i>
+            <!-- 未登录用户显示登录按钮 -->
+            <div v-if="!userState.isLoggedIn" class="guest-actions">
+              <button class="login-btn" @click="goToLogin">
+                <i class="icon-user"></i>
+                <span>登录</span>
               </button>
-              <button class="test-button" @click="handleImageTest" title="图片测试工具">
-                <i class="icon-test">🔧</i>
+              <button class="register-btn" @click="goToRegister">
+                <i class="icon-user-plus"></i>
+                <span>注册</span>
               </button>
             </div>
             
-            <div class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
-              <div class="user-avatar">
-                <img :src="userAvatarUrl" 
-                     :alt="userState.userInfo?.username" 
-                     class="avatar-image"
-                     @error="handleAvatarError" />
-              </div>
-              <transition name="menu-fade">
-                <div v-show="showUserMenu" class="user-dropdown-menu">
-                  <div class="menu-header">
-                    <div class="user-name">{{ userState.userInfo?.username }}</div>
-                    <div class="user-email">{{ userState.userInfo?.email || '用户' }}</div>
-                  </div>
-                  <div class="menu-divider"></div>
-                  <div class="menu-items">
-                    <div class="menu-item" @click="handleProfile">
-                      <i class="icon-user"></i>
-                      <span>个人中心</span>
-                    </div>
-                    <div class="menu-item" @click="handleSettings">
-                      <i class="icon-settings"></i>
-                      <span>设置</span>
-                    </div>
-                    <div class="menu-item" @click="toggleTheme">
-                      <i :class="isDarkMode ? 'icon-sun' : 'icon-moon'"></i>
-                      <span>{{ isDarkMode ? '浅色模式' : '深色模式' }}</span>
+            <!-- 已登录用户显示头像和菜单 -->
+            <div v-if="userState.isLoggedIn" class="user-section">
+              <div class="user-avatar-container" @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false">
+                <div class="user-avatar">
+                  <img :src="userAvatarUrl" 
+                       :alt="userState.userInfo?.username" 
+                       class="avatar-image"
+                       @error="handleAvatarError" />
+                </div>
+                <transition name="menu-fade">
+                  <div v-show="showUserMenu" class="user-dropdown-menu">
+                    <div class="menu-header">
+                      <div class="user-name">{{ userState.userInfo?.username }}</div>
+                      <div class="user-email">{{ userState.userInfo?.email || '用户' }}</div>
                     </div>
                     <div class="menu-divider"></div>
-                    <div class="menu-item logout" @click="handleLogout">
-                      <i class="icon-logout"></i>
-                      <span>退出登录</span>
+                    <div class="menu-items">
+                      <div class="menu-item" @click="handleProfile">
+                        <i class="icon-user"></i>
+                        <span>个人中心</span>
+                      </div>
+                      <div class="menu-item" @click="handleSettings">
+                        <i class="icon-settings"></i>
+                        <span>设置</span>
+                      </div>
+                      <div class="menu-item" @click="toggleTheme">
+                        <i :class="isDarkMode ? 'icon-sun' : 'icon-moon'"></i>
+                        <span>{{ isDarkMode ? '浅色模式' : '深色模式' }}</span>
+                      </div>
+                      <div class="menu-divider"></div>
+                      <div class="menu-item logout" @click="handleLogout">
+                        <i class="icon-logout"></i>
+                        <span>退出登录</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </transition>
+                </transition>
+              </div>
+              
+              <!-- 已登录用户的功能按钮 -->
+              <div class="history-button-container">
+                <button class="history-button" @click="handleHistory" title="历史记录">
+                  <span class="history-text">历史记录</span>
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -453,7 +514,7 @@ const clearGeneratedImages = () => {
               <div class="results-section" v-if="generatedImages.length">
                 <result-display
                   :images="generatedImages"
-                  :imageSize="generatedImages.imageSize"
+                  :imageSize="imageSize"
                   @close="clearGeneratedImages" />
               </div>
             </transition>
@@ -465,16 +526,11 @@ const clearGeneratedImages = () => {
           v-if="showHistoryModal"
           @close="handleCloseHistory" />
         
-        <!-- 图片测试工具模态框 -->
-        <div v-if="showImageTestModal" class="modal-overlay" @click="handleCloseImageTest">
-          <div class="modal-container" @click.stop>
-            <button class="modal-close" @click="handleCloseImageTest">×</button>
-            <ImageLoadTest />
-          </div>
-        </div>
+
 
         <footer class="app-footer" style="margin-top: auto;">
           <p>
+            <!-- <a>@Huanst</a> -->
             <a
               href="https://beian.miit.gov.cn/#/Integrated/recordQuery"
               target="_blank"
@@ -512,10 +568,10 @@ const clearGeneratedImages = () => {
     --secondary-color: #2980b9;
     --accent-color: #0078cc;
     --background-dark: #f0f4f8;
-    --card-bg: rgba(255, 255, 255, 0.75);
+    --card-bg: rgba(255, 255, 255, 0.25);
     --text-color: #1a1a2e;
     --text-secondary: rgba(0, 0, 0, 0.65);
-    --border-color: rgba(0, 0, 0, 0.1);
+    --border-color: rgba(255, 255, 255, 0.3);
   }
 }
 
@@ -542,24 +598,26 @@ const clearGeneratedImages = () => {
   --secondary-color: #2196f3;
   --accent-color: #42a5f5;
   --background-dark: #ffffff;
-  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-bg: rgba(255, 255, 255, 0.25);
   --text-color: #2c3e50;
   --text-secondary: rgba(44, 62, 80, 0.7);
-  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color: rgba(255, 255, 255, 0.3);
   --slider-track-bg: rgba(0, 0, 0, 0.08);
   --slider-track-bg-hover: rgba(0, 0, 0, 0.12);
   --background-dark-translucent: rgba(240, 244, 248, 0.8);
-  --border-color-translucent: rgba(0, 0, 0, 0.1);
+  --border-color-translucent: rgba(255, 255, 255, 0.3);
 }
 
 /* 优化卡片玻璃态效果 */
 :root[data-theme='light'] .glassmorphic-card {
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.06),
-    0 2px 8px rgba(0, 0, 0, 0.04),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.7);
-  background: var(--card-bg) !important;
+    0 8px 32px rgba(0, 0, 0, 0.08),
+    0 2px 16px rgba(0, 0, 0, 0.04),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* 重置基础样式 */
@@ -821,6 +879,59 @@ body {
   margin: 8px 0;
 }
 
+/* 访客用户按钮样式 */
+.guest-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.login-btn,
+.register-btn {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.register-btn {
+  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+  border-color: transparent;
+  color: white;
+}
+
+.register-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(83, 82, 237, 0.3);
+  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+}
+
+/* 用户区域布局 */
+.user-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
 /* 历史记录按钮样式 */
 .history-button-container {
   position: relative;
@@ -829,34 +940,40 @@ body {
   gap: 10px;
 }
 
-.history-button,
-.test-button {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-  border: 2px solid var(--accent-color);
-  color: white;
+.history-button {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--text-color);
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
   flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.history-button:hover,
-.test-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  background: linear-gradient(135deg, var(--accent-color), var(--primary-color));
+.history-button:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
-.history-button:active,
-.test-button:active {
+.history-button:active {
   transform: scale(0.95);
+}
+
+.history-text {
+  font-size: 14px;
+  font-weight: 500;
 }
 
 /* 模态框样式 */
@@ -915,13 +1032,11 @@ body {
 .icon-sun::before { content: '☀️'; }
 .icon-moon::before { content: '🌙'; }
 .icon-logout::before { content: '🚪'; }
-.icon-history::before { content: '📋'; }
-
 /* 历史记录按钮图标样式 */
-.history-button .icon-history {
-  font-style: normal;
-  font-size: 18px;
-  line-height: 1;
+.history-button .icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 /* 菜单动画 */
@@ -1006,9 +1121,28 @@ body {
 
 /* 小屏幕手机 */
 @media (max-width: 480px) {
+  .app-container {
+    padding: 8px;
+  }
+
   .app-header {
-    padding: 325px 0 15px 0;
-    height: 365px;
+    padding: 280px 0 12px 0;
+    height: 320px;
+    text-align: center;
+  }
+
+  .app-title {
+    font-size: 1.6rem;
+    margin-bottom: 4px;
+  }
+
+  .app-subtitle {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+
+  .user-section {
+    gap: 8px;
   }
 
   .user-avatar {
@@ -1017,11 +1151,28 @@ body {
     border-width: 1px;
   }
 
+  .history-button {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 16px;
+    min-height: 32px;
+  }
+
+  .history-text {
+    font-size: 12px;
+  }
+
   .user-dropdown-menu {
     top: 35px;
     right: 0;
-    min-width: 180px;
+    min-width: 160px;
     z-index: 1002;
+    font-size: 13px;
+  }
+
+  .menu-item {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 
   .user-avatar-container {
@@ -1029,8 +1180,54 @@ body {
   }
 
   .user-info {
+    gap: 6px;
+    padding: 0 4px;
+    font-size: 12px;
+  }
+
+  .guest-actions {
     gap: 8px;
-    padding: 0 5px;
+  }
+
+  .login-btn,
+  .register-btn {
+    padding: 8px 16px;
+    font-size: 14px;
+    min-height: 36px;
+    border-radius: 18px;
+  }
+
+  .content-container {
+    padding: 12px 8px;
+  }
+
+  .app-sections {
+    gap: 16px;
+  }
+
+  .app-main {
+    margin-bottom: 50px;
+    padding-bottom: 200px;
+  }
+
+  .app-footer {
+    padding: 8px 0;
+    font-size: 12px;
+  }
+
+  .footer-powered {
+    font-size: 11px;
+  }
+
+  /* 优化模态框 */
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  /* 优化卡片间距 */
+  .glassmorphic-card {
+    margin: 0 4px;
+    border-radius: 16px;
   }
 }
 
@@ -1200,5 +1397,131 @@ body {
   );
   z-index: -1;
   opacity: 0.5;
+}
+
+/* 移动端全局优化 */
+@media (max-width: 768px) {
+  /* 优化触摸目标大小 */
+  button, .el-button, .action-btn, .menu-item {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 优化输入框 */
+  input, textarea, .el-input__inner, .el-textarea__inner {
+    font-size: 16px !important; /* 防止iOS自动缩放 */
+  }
+
+  /* 优化选择器 */
+  .el-select .el-input__inner {
+    font-size: 16px !important;
+  }
+
+  /* 优化滚动性能 */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 优化点击反馈 */
+  button, .el-button, .action-btn {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* 优化文本选择 */
+  .user-select-none {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* 优化长按菜单 */
+  img {
+    -webkit-touch-callout: none;
+  }
+
+  /* 优化焦点样式 */
+  *:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+  }
+
+  /* 优化模态框在移动端的显示 */
+  .el-dialog, .modal-overlay {
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+  }
+
+  .el-dialog__body {
+    padding: 15px;
+  }
+
+  /* 优化表单间距 */
+  .el-form-item {
+    margin-bottom: 16px;
+  }
+
+  .el-form-item__label {
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+
+  /* 优化加载状态 */
+  .el-loading-mask {
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+
+  .el-loading-spinner {
+    font-size: 32px;
+  }
+
+  /* 优化消息提示 */
+  .el-message {
+    min-width: 280px;
+    max-width: calc(100vw - 32px);
+    margin: 0 16px;
+  }
+
+  /* 优化下拉菜单 */
+  .el-dropdown-menu {
+    max-width: calc(100vw - 32px);
+  }
+
+  /* 优化图片预览 */
+  .el-image-viewer__wrapper {
+    background-color: rgba(0, 0, 0, 0.9);
+  }
+
+  .el-image-viewer__canvas {
+    padding: 20px;
+  }
+
+  /* 优化分页器 */
+  .el-pagination {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .el-pagination .el-pager li {
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+  }
+
+  /* 优化表格 */
+  .el-table {
+    font-size: 14px;
+  }
+
+  .el-table th,
+  .el-table td {
+    padding: 8px 4px;
+  }
 }
 </style>

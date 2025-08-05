@@ -202,7 +202,7 @@ const refreshUserProfile = async () => {
       updateAvatarUrl()
     }
   } catch (error) {
-    console.error('获取用户资料失败:', error)
+    // console.error('获取用户资料失败:', error)
   }
 }
 
@@ -276,7 +276,7 @@ const uploadAvatar = async (file) => {
       throw new Error(result.message || '头像上传失败')
     }
   } catch (error) {
-    console.error('头像上传失败:', error)
+    // console.error('头像上传失败:', error)
     
     let errorMessage = '头像上传失败，请重试'
     if (error.response?.data?.message) {
@@ -333,7 +333,7 @@ const handleUpdateProfile = async () => {
       storage.setItem('user_info', JSON.stringify(userState.userInfo))
     }
   } catch (error) {
-    console.error('更新个人信息失败:', error)
+    // console.error('更新个人信息失败:', error)
     ElMessage.error('更新失败，请重试')
   } finally {
     updating.value = false
@@ -637,7 +637,72 @@ onMounted(async () => {
   gap: 8px;
 }
 
-/* 响应式设计 */
+/* 小屏幕手机优化 */
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 8px;
+    min-height: calc(100vh - 60px);
+  }
+  
+  .profile-card-wrapper {
+    max-width: 100%;
+    padding: 8px;
+  }
+  
+  .profile-title {
+    font-size: 20px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  
+  .profile-content {
+    gap: 20px;
+  }
+  
+  .avatar-wrapper {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .avatar-tips {
+    font-size: 11px;
+    padding: 0 10px;
+  }
+  
+  .profile-form :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  .profile-form :deep(.el-form-item__label) {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  
+  .profile-form :deep(.el-input__wrapper) {
+    min-height: 44px;
+    border-radius: 10px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  
+  .update-btn,
+  .back-btn {
+    height: 44px;
+    font-size: 14px;
+    border-radius: 22px;
+    width: 100%;
+  }
+  
+  .btn-content {
+    gap: 6px;
+  }
+}
+
+/* 中等屏幕手机和小平板优化 */
 @media (max-width: 768px) {
   .profile-container {
     padding: 10px;
@@ -645,10 +710,15 @@ onMounted(async () => {
   
   .profile-card-wrapper {
     max-width: 100%;
+    padding: 15px;
   }
   
   .profile-title {
-    font-size: 24px;
+    font-size: 22px;
+  }
+  
+  .profile-content {
+    gap: 25px;
   }
   
   .avatar-wrapper {
@@ -658,17 +728,24 @@ onMounted(async () => {
   
   .form-actions {
     flex-direction: column;
+    gap: 15px;
+  }
+  
+  .update-btn,
+  .back-btn {
+    height: 48px;
+    font-size: 15px;
   }
 }
 
 @media (max-width: 600px) {
   .profile-card-wrapper {
-    padding: 10px;
+    padding: 12px;
   }
   
   .avatar-wrapper {
-    width: 100px;
-    height: 100px;
+    width: 90px;
+    height: 90px;
   }
   
   .form-actions {
