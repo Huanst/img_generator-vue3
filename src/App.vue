@@ -11,11 +11,10 @@ import HistoryModal from './components/HistoryModal.vue'
 import { userState, userActions } from '@/utils/userStore'
 import { healthAPI } from '@/utils/apiService'
 import { API_BASE_URL, API_SERVER_URL } from '@/utils/urlUtils'
-<<<<<<< HEAD
-=======
+
 import { ElMessage } from 'element-plus'
 import { useI18n } from '@/utils/i18nService'
->>>>>>> bugfix
+
 
 const generatedImages = ref([])
 const errorMessage = ref('')

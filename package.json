@@ -4,7 +4,6 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-<<<<<<< HEAD
     "dev": "vite",
     "build": "vite build",
     "build:prod": "vite build --mode production",
@@ -18,18 +17,7 @@
     "type-check": "vue-tsc --noEmit",
     "clean": "rm -rf dist",
     "build:clean": "npm run clean && npm run build:prod"
-=======
-    "dev": "vite --mode development",
-    "dev:local": "vite --mode development --host",
-    "build": "vite build --mode production",
-    "build:dev": "vite build --mode development",
-    "preview": "vite preview",
-    "preview:prod": "vite preview --mode production",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
-    "type-check": "vue-tsc --noEmit",
-    "clean:console": "node scripts/replace-console.js",
-    "build:clean": "npm run clean:console && npm run build"
->>>>>>> bugfix
+
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
