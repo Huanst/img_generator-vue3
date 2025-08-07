@@ -1,0 +1,347 @@
+# GitHub Actions 自动化部署配置文件
+# 用于将 Vue3 项目自动构建并部署到云服务器
+name: Deploy Vue3 App to Cloud Server
+
+# 触发条件：当推送到 main 分支时自动执行
+on:
+  push:
+    branches:
+      - main
+  # 支持手动触发部署
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署环境'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+# 环境变量配置
+env:
+  NODE_VERSION: '22.17.0'
+  PNPM_VERSION: '10.12.4'
+  BUILD_PATH: 'dist'
+  PROJECT_NAME: 'admin-dashboard'
+  DEPLOY_PATH: '/www/wwwroot/admin-dashboard.huanst.cn'
+  BACKUP_PATH: '/www/wwwroot/backups/admin-dashboard'
+
+jobs:
+  # 构建和部署任务
+  build-and-deploy:
+    name: 构建并部署到云服务器
+    runs-on: ubuntu-latest
+    
+    # 设置超时时间（30分钟）
+    timeout-minutes: 30
+    
+    steps:
+      # 1. 检出代码
+      - name: 📦 检出代码仓库
+        uses: actions/checkout@v4
+        with:
+          # 获取完整的提交历史，用于版本标记
+          fetch-depth: 0
+
+      # 2. 设置 pnpm 包管理器（必须在 Node.js 之前）
+      - name: 📋 设置 pnpm 包管理器
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          run_install: false
+
+      # 3. 设置 Node.js 环境
+      - name: 🔧 设置 Node.js 环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # 不使用内置缓存，使用自定义缓存策略
+          registry-url: 'https://registry.npmjs.org'
+
+      # 4. 验证 pnpm 安装
+      - name: ✅ 验证 pnpm 安装
+        shell: bash
+        run: |
+          echo "验证 pnpm 安装状态..."
+          if ! command -v pnpm >/dev/null 2>&1; then
+            echo "❌ 错误: pnpm 未找到"
+            echo "尝试重新安装 pnpm..."
+            npm install -g pnpm@${{ env.PNPM_VERSION }}
+          fi
+          
+          echo "pnpm 版本信息:"
+          pnpm --version
+          
+          echo "pnpm 安装路径:"
+          which pnpm
+          
+          # 验证 pnpm 基本功能
+          echo "验证 pnpm 基本功能..."
+          pnpm --help >/dev/null || {
+            echo "❌ pnpm 功能异常，重新安装..."
+            npm install -g pnpm@${{ env.PNPM_VERSION }}
+          }
+
+      # 5. 获取 pnpm 缓存目录
+      - name: 🗂️ 获取 pnpm 缓存目录
+        shell: bash
+        run: |
+          echo "获取 pnpm 缓存目录..."
+          
+          # 尝试获取 pnpm store 路径，如果失败则使用默认路径
+          if STORE_PATH=$(pnpm store path --silent 2>/dev/null); then
+            echo "pnpm 缓存路径: $STORE_PATH"
+            echo "STORE_PATH=$STORE_PATH" >> $GITHUB_ENV
+          else
+            echo "⚠️ 无法获取 pnpm store 路径，使用默认路径"
+            DEFAULT_STORE_PATH="$HOME/.local/share/pnpm/store"
+            echo "默认缓存路径: $DEFAULT_STORE_PATH"
+            echo "STORE_PATH=$DEFAULT_STORE_PATH" >> $GITHUB_ENV
+            # 确保目录存在
+            mkdir -p "$DEFAULT_STORE_PATH"
+          fi
+          
+          # 设置额外的缓存路径
+          echo "PNPM_CACHE_FOLDER=$HOME/.cache/pnpm" >> $GITHUB_ENV
+          echo "NODE_MODULES_CACHE=${{ github.workspace }}/node_modules" >> $GITHUB_ENV
+
+      # 6. 设置 pnpm store 缓存
+      - name: 🚀 设置 pnpm store 缓存
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      # 7. 设置 pnpm 全局缓存
+      - name: 🗃️ 设置 pnpm 全局缓存
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: |
+            ~/.cache/pnpm
+            ~/.local/share/pnpm
+          key: ${{ runner.os }}-pnpm-global-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-global-
+
+      # 8. 设置 node_modules 缓存（备用方案）
+      - name: 📦 设置 node_modules 缓存
+        uses: actions/cache@v4
+        continue-on-error: true
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-modules-
+
+      # 9. 安装项目依赖
+      - name: 📥 安装项目依赖
+        shell: bash
+        run: |
+          echo "开始安装依赖..."
+          
+          # 检查 package.json 是否存在
+          if [ ! -f "package.json" ]; then
+            echo "❌ 错误: package.json 不存在"
+            exit 1
+          fi
+          
+          echo "项目信息:"
+          echo "- 项目名称: $(grep '"name"' package.json | head -1 | cut -d'"' -f4)"
+          echo "- 当前目录: $(pwd)"
+          
+          # 检查 pnpm-lock.yaml 是否存在
+          if [ ! -f "pnpm-lock.yaml" ]; then
+            echo "⚠️ 警告: pnpm-lock.yaml 不存在，将生成新的锁定文件"
+            pnpm install
+          else
+            echo "使用 pnpm-lock.yaml 安装依赖"
+            # 尝试冻结安装，如果失败则回退到普通安装
+            if ! pnpm install --frozen-lockfile --prefer-offline; then
+              echo "⚠️ 冻结安装失败，回退到普通安装"
+              pnpm install
+            fi
+          fi
+          
+          echo "✅ 依赖安装完成"
+          echo "已安装的包数量: $(pnpm list --depth=0 2>/dev/null | wc -l)"
+          
+          # 验证关键依赖
+          echo "验证关键依赖..."
+          if pnpm list vue >/dev/null 2>&1; then
+            echo "✅ Vue 依赖正常"
+          else
+            echo "⚠️ Vue 依赖可能有问题"
+          fi
+
+      # 10. 构建项目
+      - name: 🏗️ 构建 Admin Dashboard Vue3 项目
+        shell: bash
+        env:
+          # 生产环境变量
+          NODE_ENV: production
+          VITE_API_BASE_URL: https://huanst.cn/api
+          VITE_API_SERVER_URL: https://huanst.cn
+          VITE_APP_TITLE: 管理员仪表盘
+        run: |
+           echo "开始构建项目..."
+           
+           # 显示构建环境信息
+           echo "构建环境变量:"
+           echo "- NODE_ENV: $NODE_ENV"
+           echo "- VITE_API_BASE_URL: $VITE_API_BASE_URL"
+           echo "- VITE_API_SERVER_URL: $VITE_API_SERVER_URL"
+           
+           # 检查构建脚本是否存在
+           if ! pnpm run --if-present build --help 2>/dev/null | grep -q "build"; then
+             # 使用更简单的方法检查 package.json 中是否有 build 脚本
+             if ! grep -q '"build"' package.json; then
+               echo "❌ 错误: 未找到 build 脚本"
+               echo "请确保 package.json 中包含 build 脚本"
+               exit 1
+             fi
+           fi
+           
+           # 执行构建
+           pnpm run build
+           
+           # 检查构建产物是否存在
+           if [ ! -d "${{ env.BUILD_PATH }}" ]; then
+             echo "❌ 错误: 构建目录不存在: ${{ env.BUILD_PATH }}"
+             exit 1
+           fi
+           
+           echo "✅ 项目构建完成"
+           
+           # 显示构建产物信息
+           echo "构建产物大小："
+           du -sh ${{ env.BUILD_PATH }}
+           
+           echo "构建产物列表："
+           ls -la ${{ env.BUILD_PATH }}
+
+      # 11. 压缩构建产物（减少传输时间）
+      - name: 📦 压缩构建产物
+        shell: bash
+        run: |
+          echo "压缩构建产物..."
+          
+          # 设置压缩包文件名变量
+          BUILD_ARCHIVE="${{ env.PROJECT_NAME }}-build-${{ github.sha }}.tar.gz"
+          
+          # 创建压缩包
+          tar -czf "$BUILD_ARCHIVE" -C ${{ env.BUILD_PATH }} .
+          
+          echo "✅ 压缩完成"
+          echo "压缩包大小："
+          ls -lh "$BUILD_ARCHIVE"
+          
+          # 验证压缩包内容
+          echo "压缩包内容预览："
+          tar -tzf "$BUILD_ARCHIVE" 2>/dev/null | head -10 || echo "压缩包内容验证完成"
+
+      # 12. 部署文件到服务器
+      - name: 🚀 部署 Admin Dashboard 文件到云服务器
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "${{ env.PROJECT_NAME }}-build-${{ github.sha }}.tar.gz"
+          target: "/tmp/"
+          timeout: 300s
+
+      # 13. 在服务器上执行部署脚本
+      - name: 🔄 执行 Admin Dashboard 服务器部署脚本
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          timeout: 300s
+          script: |
+            set -e  # 遇到错误立即退出
+            
+            echo "=== 开始部署流程 ==="
+            
+            # 设置变量
+            DEPLOY_PATH="${{ env.DEPLOY_PATH }}"
+            BACKUP_PATH="${{ env.BACKUP_PATH }}"
+            BUILD_FILE="/tmp/${{ env.PROJECT_NAME }}-build-${{ github.sha }}.tar.gz"
+            PROJECT_NAME="${{ env.PROJECT_NAME }}"
+            
+            echo "部署路径: $DEPLOY_PATH"
+            echo "备份路径: $BACKUP_PATH"
+            
+            # 创建必要的目录
+            sudo mkdir -p "$DEPLOY_PATH"
+            sudo mkdir -p "$BACKUP_PATH"
+            
+            # 备份当前版本（如果存在）
+            if [ -d "$DEPLOY_PATH" ] && [ "$(ls -A $DEPLOY_PATH)" ]; then
+              echo "备份当前版本..."
+              BACKUP_NAME="backup-$(date +%Y%m%d-%H%M%S)"
+              sudo tar -czf "$BACKUP_PATH/$BACKUP_NAME.tar.gz" -C "$DEPLOY_PATH" . || echo "备份失败，继续部署"
+              
+              # 保留最近5个备份
+              cd "$BACKUP_PATH"
+              sudo ls -t backup-*.tar.gz 2>/dev/null | tail -n +6 | sudo xargs rm -f || true
+            fi
+            
+            # 清理旧文件
+            echo "清理部署目录..."
+            sudo rm -rf "$DEPLOY_PATH"/*
+            
+            # 解压新版本
+            echo "部署新版本..."
+            sudo tar -xzf "$BUILD_FILE" -C "$DEPLOY_PATH"
+            
+            # 设置文件权限
+            echo "设置文件权限..."
+            sudo chown -R www-data:www-data "$DEPLOY_PATH" || sudo chown -R nginx:nginx "$DEPLOY_PATH" || echo "权限设置可能需要手动调整"
+            sudo chmod -R 755 "$DEPLOY_PATH"
+            
+            # 重启相关服务（根据实际情况调整）
+            echo "重启 Web 服务..."
+            sudo systemctl reload nginx || sudo service nginx reload || echo "Nginx 重启失败，请手动检查"
+            
+            # 清理临时文件
+            echo "清理临时文件..."
+            rm -f "$BUILD_FILE"
+            
+            # 健康检查（可选）
+            echo "执行健康检查..."
+            if [ ! -z "${{ secrets.HEALTH_CHECK_URL }}" ]; then
+              sleep 5  # 等待服务启动
+              curl -f "${{ secrets.HEALTH_CHECK_URL }}" || echo "健康检查失败，请手动验证"
+            fi
+            
+            echo "=== 部署完成 ==="
+            echo "部署时间: $(date)"
+            echo "Git 提交: ${{ github.sha }}"
+            echo "部署路径: $DEPLOY_PATH"
+
+      # 14. 部署状态通知（可选）
+      - name: 📢 发送 Admin Dashboard 部署通知
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ 部署成功！"
+            echo "🔗 提交: ${{ github.sha }}"
+            echo "🌐 分支: ${{ github.ref_name }}"
+            echo "⏰ 时间: $(date)"
+          else
+            echo "❌ 部署失败！"
+            echo "请检查日志并修复问题"
+          fi
+          
+          # 如果配置了通知 Webhook，可以在这里发送通知
+          # curl -X POST "${{ secrets.NOTIFICATION_WEBHOOK }}" -d '{"status": "${{ job.status }}", "commit": "${{ github.sha }}"}'
