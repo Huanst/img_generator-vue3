@@ -5,13 +5,9 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import axios from 'axios'
 import './style.css'
-<<<<<<< HEAD
-import { API_BASE_URL } from '@/utils/urlUtils.js'
-=======
 import { API_BASE_URL } from '@/utils/urlUtils'
 import { i18nService } from '@/utils/i18nService'
 import Logger from '@/utils/logger'
->>>>>>> bugfix
 
 // 输出环境信息
 Logger.info('应用环境:', import.meta.env.MODE)
