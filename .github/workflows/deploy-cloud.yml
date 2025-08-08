@@ -24,9 +24,9 @@ env:
   NODE_VERSION: '22.17.0'
   PNPM_VERSION: '10.12.4'
   BUILD_PATH: 'dist'
-  PROJECT_NAME: 'admin-dashboard'
-  DEPLOY_PATH: '/www/wwwroot/admin-dashboard.huanst.cn'
-  BACKUP_PATH: '/www/wwwroot/backups/admin-dashboard'
+  PROJECT_NAME: 'img_generator'
+  DEPLOY_PATH: '/www/wwwroot/huanst.cn'
+  BACKUP_PATH: '/www/wwwroot/backups/huanst.cn'
 
 jobs:
   # 构建和部署任务
@@ -258,7 +258,7 @@ jobs:
           timeout: 300s
 
       # 13. 在服务器上执行部署脚本
-      - name: 🔄 执行 Admin Dashboard 服务器部署脚本
+      - name: 🔄 执行img_generator服务器部署脚本
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
