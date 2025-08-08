@@ -1,5 +1,5 @@
 // API基础URL - 根据环境自动切换
-let API_BASE_URL = 'https://huanst.cn/api/'
+let API_BASE_URL = 'https://huanst.cn/api'
 let API_SERVER_URL = 'https://huanst.cn'
 
 // 检查是否在浏览器环境中（Vite）
@@ -10,7 +10,7 @@ const isNodeEnv = typeof process !== 'undefined' && process.env
 // 开发环境使用本地API服务器
 if ((isViteEnv && import.meta.env.MODE === 'development') ||
     (isNodeEnv && process.env.NODE_ENV === 'development')) {
-  API_BASE_URL = 'http://localhost:5004/api/'
+  API_BASE_URL = 'http://localhost:5004/api'
   API_SERVER_URL = 'http://localhost:5004'
 }
 
