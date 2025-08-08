@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
 import { authAPI, userAPI } from './apiService'
-import apiClient from './apiClient'
+import apiClient from './apiclient'
 import { ElMessage } from 'element-plus'
 
 // 用户状态
