@@ -141,7 +141,8 @@ const handleLogout = () => {
   clearGeneratedImages()
   
   userActions.logout()
-  currentPage.value = 'login'
+  // 退出登录后保持在主页面，不强制跳转到登录页面
+  currentPage.value = 'main'
   showUserMenu.value = false
 }
 
