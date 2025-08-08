@@ -47,7 +47,7 @@ export function getEnv(key, defaultValue = '', type = 'string') {
  * @returns {string} API基础URL
  */
 export function getApiBaseUrl() {
-  return getEnv('VITE_API_BASE_URL', 'https://huanst.cn/api')
+  return getEnv('VITE_API_BASE_URL', 'https://huanst.cn/api/')
 }
 
 /**
