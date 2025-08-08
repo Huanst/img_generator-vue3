@@ -26,7 +26,22 @@ export const userActions = {
       // 支持多种成功状态格式：true, 'true', 1, '1'
       if (response.data.success === true || response.data.success === 'true' || 
           response.data.success === 1 || response.data.success === '1') {
+        
+        // 安全地检查和解构数据
+        if (!response.data.data) {
+          throw new Error('登录响应数据格式错误：缺少data字段')
+        }
+        
         const { token, user } = response.data.data
+        
+        // 验证必要字段
+        if (!token) {
+          throw new Error('登录响应数据格式错误：缺少token字段')
+        }
+        
+        if (!user) {
+          throw new Error('登录响应数据格式错误：缺少用户信息')
+        }
         
         // 更新状态
         userState.isLoggedIn = true
