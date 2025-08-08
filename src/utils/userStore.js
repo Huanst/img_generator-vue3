@@ -23,7 +23,9 @@ export const userActions = {
       const response = await authAPI.login(credentials)
       
       // 修复：后端返回的是 success 字段，不是 status 字段
-      if (response.data.success === true) {
+      // 支持多种成功状态格式：true, 'true', 1, '1'
+      if (response.data.success === true || response.data.success === 'true' || 
+          response.data.success === 1 || response.data.success === '1') {
         const { token, user } = response.data.data
         
         // 更新状态
@@ -47,7 +49,11 @@ export const userActions = {
         
         return { success: true, user }
       } else {
-        throw new Error(response.data.message || '登录失败')
+        // 避免抛出包含"成功"字样的错误信息
+        const errorMsg = response.data.message && !response.data.message.includes('成功') 
+          ? response.data.message 
+          : '登录失败，请检查用户名和密码'
+        throw new Error(errorMsg)
       }
     } catch (error) {
       // console.error('登录错误:', error)
@@ -69,10 +75,17 @@ export const userActions = {
             errorMessage = '服务器内部错误，请稍后再试'
             break
           default:
-            errorMessage = error.response.data?.message || errorMessage
+            // 确保不显示包含"成功"字样的错误信息
+            const responseMsg = error.response.data?.message
+            errorMessage = responseMsg && !responseMsg.includes('成功') 
+              ? responseMsg 
+              : errorMessage
         }
       } else if (error.request) {
         errorMessage = '无法连接到服务器，请检查网络连接'
+      } else if (error.message && !error.message.includes('成功')) {
+        // 如果是自定义错误且不包含"成功"字样，使用错误信息
+        errorMessage = error.message
       }
       
       ElMessage({
