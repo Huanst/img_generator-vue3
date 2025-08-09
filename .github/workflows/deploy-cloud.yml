@@ -308,6 +308,41 @@ jobs:
             sudo chown -R www-data:www-data "$DEPLOY_PATH" || sudo chown -R nginx:nginx "$DEPLOY_PATH" || echo "权限设置可能需要手动调整"
             sudo chmod -R 755 "$DEPLOY_PATH"
             
+            # ========== 🔗 创建 uploads 文件夹符号链接 ==========
+            # 这个步骤解决部署后 uploads 文件夹消失的问题
+            echo "创建 uploads 文件夹符号链接..."
+            
+            # 定义后端 uploads 文件夹路径（根据实际后端部署路径调整）
+            BACKEND_UPLOADS_PATH="/www/wwwroot/backend/uploads"
+            FRONTEND_UPLOADS_LINK="$DEPLOY_PATH/uploads"
+            
+            # 检查后端 uploads 文件夹是否存在
+            if [ -d "$BACKEND_UPLOADS_PATH" ]; then
+              echo "✅ 找到后端 uploads 文件夹: $BACKEND_UPLOADS_PATH"
+              
+              # 删除前端可能存在的 uploads 文件夹或链接
+              if [ -e "$FRONTEND_UPLOADS_LINK" ]; then
+                echo "删除现有的 uploads 文件夹/链接..."
+                sudo rm -rf "$FRONTEND_UPLOADS_LINK"
+              fi
+              
+              # 创建符号链接
+              echo "创建符号链接: $FRONTEND_UPLOADS_LINK -> $BACKEND_UPLOADS_PATH"
+              sudo ln -sf "$BACKEND_UPLOADS_PATH" "$FRONTEND_UPLOADS_LINK"
+              
+              # 验证符号链接是否创建成功
+              if [ -L "$FRONTEND_UPLOADS_LINK" ]; then
+                echo "✅ uploads 符号链接创建成功"
+                echo "链接详情: $(ls -la $FRONTEND_UPLOADS_LINK)"
+              else
+                echo "❌ uploads 符号链接创建失败"
+              fi
+            else
+              echo "⚠️ 警告: 后端 uploads 文件夹不存在: $BACKEND_UPLOADS_PATH"
+              echo "请确保后端项目已正确部署，或调整 BACKEND_UPLOADS_PATH 路径"
+            fi
+            # ========== 符号链接设置完成 ==========
+            
             # 重启相关服务（根据实际情况调整）
             echo "重启 Web 服务..."
             sudo systemctl reload nginx || sudo service nginx reload || echo "Nginx 重启失败，请手动检查"
