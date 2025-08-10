@@ -51,7 +51,7 @@
                 @change="handleAvatarChange"
                 style="display: none" />
               <div class="avatar-tips">
-                <span>支持 JPG、PNG 格式，文件大小不超过 2MB</span>
+                <span>支持 JPG、PNG 格式，文件大小不超过 5MB</span>
               </div>
             </div>
           </el-form-item>
@@ -222,9 +222,9 @@ const handleAvatarChange = (event) => {
     return
   }
 
-  // 验证文件大小 (2MB)
-  if (file.size > 2 * 1024 * 1024) {
-    ElMessage.error('文件大小不能超过 2MB')
+  // 验证文件大小 (5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    ElMessage.error('文件大小不能超过 5MB')
     return
   }
 
