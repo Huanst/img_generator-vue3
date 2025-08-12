@@ -263,10 +263,11 @@ const handleRegister = async () => {
         const registerResponse = await authAPI.registerWithAvatar(formData)
         const registerResult = registerResponse.data
 
-        if (registerResult.success) {
+        // 修复：判断后端返回的 status 字段而不是 success 字段
+        if (registerResult.status === 'success') {
           loading.value = false
-          
-          // 显示成功消息
+
+          // 显示成功消息（不使用倒计时弹窗）
           ElMessage.success('注册成功！')
 
           // 发送注册成功事件
@@ -275,42 +276,10 @@ const handleRegister = async () => {
             email: registerForm.email,
           })
 
-          // 显示跳转倒计时提示
-          let countdown = 3
-          let countdownTimer = null
-          
-          const showCountdown = () => {
-            if (countdown > 0) {
-              ElMessage({
-                type: 'info',
-                message: `${countdown} 秒后自动跳转到登录页面...`,
-                duration: 1000,
-                showClose: false
-              })
-              countdown--
-              countdownTimer = setTimeout(showCountdown, 1000)
-            } else {
-                goToLogin()
-              }
-          }
-          
-          // 显示立即跳转提示
-          ElMessage({
-            type: 'success',
-            message: '注册成功！点击此处立即跳转到登录页面',
-            duration: 4000,
-            showClose: true,
-            onClick: () => {
-              // 清除倒计时
-              if (countdownTimer) {
-                clearTimeout(countdownTimer)
-              }
-              goToLogin()
-            }
-          })
-          
-          // 开始倒计时
-          setTimeout(showCountdown, 1000)
+          // 0.5 秒后自动跳转到登录页面（无倒计时提示框）
+          setTimeout(() => {
+            goToLogin()
+          }, 500)
         } else {
           loading.value = false
           ElMessage.error(registerResult.message || '注册失败，请重试')
