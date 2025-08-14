@@ -1075,9 +1075,12 @@ watch([width, height], () => {
 
   .generate-btn {
     max-width: none;
-    padding: 12px 20px;
+    width: 100%;
+    padding: 14px 20px;
     font-size: 16px;
-    margin-top: 8px;
+    margin-top: 12px;
+    min-height: 50px;
+    border-radius: 12px;
   }
 
   .slider-container {
@@ -1095,11 +1098,12 @@ watch([width, height], () => {
 
   /* 优化文本输入框在小屏幕上的显示 */
   .fixed-height-textarea :deep(.el-textarea__inner) {
-    height: 80px !important;
-    min-height: 80px !important;
-    max-height: 80px !important;
+    height: 100px !important;
+    min-height: 100px !important;
+    max-height: 100px !important;
     font-size: 16px; /* 防止iOS缩放 */
     padding: 12px;
+    line-height: 1.4;
   }
 
   .textarea-container {
@@ -1115,6 +1119,9 @@ watch([width, height], () => {
   .random-prompt-btn {
     width: 100% !important;
     justify-content: center;
+    min-height: 44px;
+    border-radius: 8px;
+    font-size: 14px;
   }
 
   .character-count {

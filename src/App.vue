@@ -1122,23 +1122,26 @@ body {
 /* 小屏幕手机 */
 @media (max-width: 480px) {
   .app-container {
-    padding: 8px;
+    padding: 4px;
   }
 
   .app-header {
-    padding: 280px 0 12px 0;
-    height: 320px;
+    padding: 120px 0 8px 0;
+    height: 160px;
     text-align: center;
+    position: relative;
   }
 
   .app-title {
-    font-size: 1.6rem;
-    margin-bottom: 4px;
+    font-size: 1.4rem;
+    margin-bottom: 2px;
+    line-height: 1.2;
   }
 
   .app-subtitle {
-    font-size: 0.85rem;
-    margin-bottom: 8px;
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+    line-height: 1.3;
   }
 
   .user-section {
@@ -1206,17 +1209,25 @@ body {
   }
 
   .app-main {
-    margin-bottom: 50px;
-    padding-bottom: 200px;
+    margin-bottom: 20px;
+    padding-bottom: 60px;
+    min-height: calc(100vh - 200px);
   }
 
   .app-footer {
-    padding: 8px 0;
-    font-size: 12px;
+    padding: 6px 0;
+    font-size: 11px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 100;
   }
 
   .footer-powered {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   /* 优化模态框 */
@@ -1234,17 +1245,19 @@ body {
 /* 中等屏幕手机和小平板 */
 @media (max-width: 768px) {
   .app-container {
-    padding: 10px;
+    padding: 8px;
   }
 
   .app-header {
-    padding: 345px 0 15px 0;
-    height: 385px;
+    padding: 140px 0 12px 0;
+    height: 180px;
     text-align: center;
+    position: relative;
   }
 
   .app-title {
-    font-size: 1.8rem;
+    font-size: 1.6rem;
+    line-height: 1.2;
   }
 
   .user-dropdown-menu {
@@ -1282,12 +1295,20 @@ body {
   }
 
   .app-main {
-    margin-bottom: 60px;
-    padding-bottom: 300px; /* 移动端需要更多底部空间 */
+    margin-bottom: 30px;
+    padding-bottom: 80px;
+    min-height: calc(100vh - 220px);
   }
 
   .app-footer {
-    padding: 10px 0;
+    padding: 8px 0;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 100;
   }
 }
 
@@ -1522,6 +1543,30 @@ body {
   .el-table th,
   .el-table td {
     padding: 8px 4px;
+  }
+
+  /* 移动端专用优化 */
+  body {
+    -webkit-text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 优化卡片在移动端的间距 */
+  .glassmorphic-card {
+    margin: 8px 4px;
+    padding: 16px;
+  }
+
+  /* 优化用户菜单在移动端的显示 */
+  .user-dropdown-menu {
+    max-width: calc(100vw - 20px);
+    right: 10px;
+  }
+
+  /* 优化按钮间距 */
+  .el-button + .el-button {
+    margin-left: 8px;
   }
 }
 </style>

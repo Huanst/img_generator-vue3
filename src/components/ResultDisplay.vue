@@ -635,17 +635,19 @@ const closeResultPanel = () => {
 }
 
 .image-container {
-  position: relative;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--card-bg, rgba(0, 0, 0, 0.2));
-  transition:
-    transform 0.3s,
-    box-shadow 0.3s;
-  border: 1px solid rgba(var(--text-color, 255, 255, 255), 0.05);
-  display: flex;
-  flex-direction: column;
-}
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--card-bg, rgba(0, 0, 0, 0.2));
+    transition:
+      transform 0.3s,
+      box-shadow 0.3s;
+    border: 1px solid rgba(var(--text-color, 255, 255, 255), 0.05);
+    display: flex;
+    flex-direction: column;
+    aspect-ratio: 1;
+    min-height: 280px;
+  }
 
 .image-container:hover {
   transform: translateY(-5px);
@@ -820,7 +822,8 @@ const closeResultPanel = () => {
 
   .image-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 12px;
+    padding: 0 4px;
   }
 
   .image-number {
@@ -852,6 +855,17 @@ const closeResultPanel = () => {
     margin-top: 10px;
     padding: 0 6px;
     line-height: 1.3;
+  }
+
+  /* 移动端图片容器优化 */
+  .image-container {
+    min-height: 250px;
+    aspect-ratio: 1;
+  }
+
+  .result-image {
+    height: 250px;
+    object-fit: cover;
   }
 }
 
