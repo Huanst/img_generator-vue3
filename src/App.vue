@@ -1,12 +1,14 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, provide } from 'vue'
 import ImageGenerator from './components/ImageGenerator.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import LoginPage from './components/LoginPage.vue'
 import RegisterPage from './components/RegisterPage.vue'
 import ProfilePage from './components/ProfilePage.vue'
-import SettingsPage from './components/SettingsPage.vue'
+
 import HistoryModal from './components/HistoryModal.vue'
+
+
 
 import { userState, userActions } from '@/utils/userStore'
 import { healthAPI } from '@/utils/apiService'
@@ -19,7 +21,7 @@ import { useI18n } from '@/utils/i18nService'
 const generatedImages = ref([])
 const errorMessage = ref('')
 const isDarkMode = ref(true) // 默认使用深色模式
-const currentPage = ref('main') // 当前页面: login, register, main, profile, settings, debug
+const currentPage = ref('main') // 当前页面: login, register, main, profile, debug
 const showUserMenu = ref(false) // 控制用户菜单显示
 const showHistoryModal = ref(false) // 控制历史记录模态框显示
 
@@ -167,16 +169,10 @@ const handleBackFromRegister = () => {
   currentPage.value = 'main'
 }
 
-// 处理设置
-const handleSettings = () => {
-  currentPage.value = 'settings'
-  showUserMenu.value = false
-}
+
 
 // 从设置页面返回主页面
-const handleBackFromSettings = () => {
-  currentPage.value = 'main'
-}
+
 
 /**
  * 处理历史记录按钮点击事件
@@ -199,6 +195,11 @@ const handleHistory = () => {
 const handleCloseHistory = () => {
   showHistoryModal.value = false
 }
+
+/**
+ * 处理移动端底部导航点击事件
+ * @param {string} routeId - 导航项ID (generator, history, profile)
+ */
 
 
 
@@ -328,10 +329,10 @@ const scrollToResults = () => {
     setTimeout(() => {
       const resultsSection = document.querySelector('.results-section')
       if (resultsSection) {
-        // 使用 'nearest' 确保结果区域可见，但不会让页面顶部跑出视野
+        // Use 'start' to respect scroll-margin-top and ensure top of card is visible below header
         resultsSection.scrollIntoView({ 
           behavior: 'smooth', 
-          block: 'nearest',
+          block: 'start',
           inline: 'nearest'
         })
       }
@@ -418,13 +419,9 @@ const clearGeneratedImages = () => {
           @back="handleBackFromProfile" />
       </template>
 
-      <template v-else-if="currentPage === 'settings'">
-        <settings-page
-          :isDarkMode="isDarkMode"
-          :toggleTheme="toggleTheme"
-          @back="handleBackFromSettings"
-          @toggleTheme="toggleTheme" />
-      </template>
+
+
+
 
       <template v-else-if="currentPage === 'main'">
         <header class="app-header">
@@ -439,6 +436,7 @@ const clearGeneratedImages = () => {
                 <i class="icon-user-plus"></i>
                 <span>注册</span>
               </button>
+
             </div>
             
             <!-- 已登录用户显示头像和菜单 -->
@@ -462,10 +460,7 @@ const clearGeneratedImages = () => {
                         <i class="icon-user"></i>
                         <span>个人中心</span>
                       </div>
-                      <div class="menu-item" @click="handleSettings">
-                        <i class="icon-settings"></i>
-                        <span>设置</span>
-                      </div>
+
                       <div class="menu-item" @click="toggleTheme">
                         <i :class="isDarkMode ? 'icon-sun' : 'icon-moon'"></i>
                         <span>{{ isDarkMode ? '浅色模式' : '深色模式' }}</span>
@@ -485,6 +480,7 @@ const clearGeneratedImages = () => {
                 <button class="history-button" @click="handleHistory" title="历史记录">
                   <span class="history-text">历史记录</span>
                 </button>
+
               </div>
             </div>
           </div>
@@ -542,6 +538,8 @@ const clearGeneratedImages = () => {
             基于 <span class="highlight">SiliconFlow API</span> 提供技术支持
           </p> -->
         </footer>
+
+
       </template>
     </div>
   </div>
@@ -560,6 +558,9 @@ const clearGeneratedImages = () => {
   --transition-speed: 0.3s;
   --max-content-width: 1200px;
 }
+
+/* 移动端专用 CSS 变量 */
+
 
 /* 添加亮色模式变量 */
 @media (prefers-color-scheme: light) {
@@ -762,11 +763,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 40px 0 10px 0;
+  padding: 20px 0;
   margin-bottom: 30px;
-  position: relative;
-  z-index: 20;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
   height: 80px;
+  background: transparent;
 }
 
 .user-info {
@@ -774,7 +779,7 @@ body {
   align-items: center;
   justify-content: flex-end;
   width: 100%;
-  padding: 0 10px;
+  padding: 0 40px;
   gap: 15px;
 }
 
@@ -1068,6 +1073,7 @@ body {
   flex: 1;
   min-height: calc(100vh - 200px); /* 确保主要内容区域有足够的最小高度 */
   padding-bottom: 100px; /* 为底部 footer 留出空间 */
+  padding-top: 100px; /* 为固定的头部留出空间 */
 }
 
 .app-sections {
@@ -1119,29 +1125,38 @@ body {
   opacity: 0;
 }
 
+/* Global results section style */
+.results-section {
+  scroll-margin-top: 100px;
+  width: 100%;
+}
+
 /* 小屏幕手机 */
 @media (max-width: 480px) {
   .app-container {
     padding: 4px;
   }
 
+  /* 隐藏PC端头部导航 */
   .app-header {
-    padding: 120px 0 8px 0;
-    height: 160px;
-    text-align: center;
+    display: none;
+  }
+
+  /* 调整主内容区域padding */
+  .app-main {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    padding-top: 80px; /* 增加顶部padding，为固定头部留出空间 */
+    min-height: calc(100vh - 40px);
+  }
+
+  /* 调整footer */
+  .app-footer {
+    padding: 6px 0;
+    font-size: 11px;
+    margin-bottom: 0;
     position: relative;
-  }
-
-  .app-title {
-    font-size: 1.4rem;
-    margin-bottom: 2px;
-    line-height: 1.2;
-  }
-
-  .app-subtitle {
-    font-size: 0.8rem;
-    margin-bottom: 4px;
-    line-height: 1.3;
+    background: transparent;
   }
 
   .user-section {
@@ -1184,7 +1199,7 @@ body {
 
   .user-info {
     gap: 6px;
-    padding: 0 4px;
+    padding: 0 12px;
     font-size: 12px;
   }
 
@@ -1206,24 +1221,6 @@ body {
 
   .app-sections {
     gap: 16px;
-  }
-
-  .app-main {
-    margin-bottom: 20px;
-    padding-bottom: 60px;
-    min-height: calc(100vh - 200px);
-  }
-
-  .app-footer {
-    padding: 6px 0;
-    font-size: 11px;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    z-index: 100;
   }
 
   .footer-powered {
@@ -1248,13 +1245,26 @@ body {
     padding: 8px;
   }
 
+  /* 隐藏PC端头部导航 */
+  /* 显示PC端头部导航 */
   .app-header {
-    padding: 140px 0 12px 0;
-    height: 180px;
-    text-align: center;
-    position: relative;
+    display: flex;
+    padding: 10px 0;
+    margin-bottom: 20px;
+    height: 60px;
   }
 
+  /* 调整主内容区域padding，为底部导航留出空间 */
+  .app-main {
+    padding-top: 80px; /* 增加顶部padding */
+    padding-bottom: 20px;
+    min-height: calc(100vh - 40px);
+  }
+
+  /* 调整footer位置，避免被底部导航遮挡 */
+  .app-footer {
+    margin-bottom: 0;
+  }
   .app-title {
     font-size: 1.6rem;
     line-height: 1.2;
@@ -1279,7 +1289,7 @@ body {
 
   .user-info {
     gap: 10px;
-    padding: 0 8px;
+    padding: 0 20px;
   }
 
   .app-subtitle {
@@ -1293,27 +1303,15 @@ body {
   .app-sections {
     gap: 20px;
   }
-
-  .app-main {
-    margin-bottom: 30px;
-    padding-bottom: 80px;
-    min-height: calc(100vh - 220px);
-  }
-
-  .app-footer {
-    padding: 8px 0;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    z-index: 100;
-  }
 }
 
 /* 大屏幕平板 */
 @media (min-width: 769px) and (max-width: 1023px) {
+  .app-header {
+    padding: 15px 0;
+    height: 70px;
+  }
+
   .user-avatar {
     width: 38px;
     height: 38px;
@@ -1328,6 +1326,10 @@ body {
 
   .user-avatar-container {
     z-index: 1001;
+  }
+
+  .app-main {
+    padding-top: 100px;
   }
 }
 
@@ -1353,6 +1355,8 @@ body {
     padding-left: 15px;
     display: flex;
     justify-content: flex-start;
+    /* Add scroll margin to prevent header overlap */
+    scroll-margin-top: 100px;
   }
 
   .generator-section > *,
@@ -1373,6 +1377,35 @@ body {
 
 .beian-link:hover {
   color: var(--accent-color);
+}
+
+/* 移动端测试页面样式 */
+.mobile-test-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.test-header {
+  margin-bottom: 20px;
+}
+
+.back-btn {
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(-2px);
 }
 
 /* 调试按钮样式 */

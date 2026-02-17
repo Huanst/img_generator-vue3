@@ -496,24 +496,19 @@ watch(showAdditionalOptions, (newVal) => {
       const generatorCard = document.querySelector('.image-generator-card')
       const header = document.querySelector('.app-header')
       
-      if (generatorCard && header) {
-        const headerHeight = header.offsetHeight
+      if (generatorCard) {
+        const headerHeight = header ? header.offsetHeight : 80
         const cardRect = generatorCard.getBoundingClientRect()
-        const viewportHeight = window.innerHeight
         
-        // 如果卡片底部超出视口，调整滚动位置
-        if (cardRect.bottom > viewportHeight) {
-          const scrollTop = window.pageYOffset + cardRect.bottom - viewportHeight + 50
-          // 确保不会滚动过头，让头部消失
-          const maxScrollTop = window.pageYOffset + cardRect.top - headerHeight - 20
-          
+        // 如果卡片顶部被头部遮挡，向下滚动一点
+        if (cardRect.top < headerHeight + 20) {
           window.scrollTo({
-            top: Math.min(scrollTop, Math.max(0, maxScrollTop)),
+            top: Math.max(0, window.pageYOffset - (headerHeight + 20 - cardRect.top)),
             behavior: 'smooth'
           })
         }
       }
-    }, 300) // 等待DOM更新完成
+    }, 350) // 等待DOM更新和动画完成
   }
 })
 
@@ -1029,8 +1024,166 @@ watch([width, height], () => {
   justify-content: center;
 }
 
-/* 小屏幕手机优化 */
+/* 移动端基础样式优化 (Task 1.5) */
+@media (max-width: 768px) {
+  /* 卡片内边距优化 */
+  .image-generator-card {
+    padding: var(--mobile-padding, 16px);
+    border-radius: var(--mobile-border-radius, 12px);
+  }
+
+  /* 标题和头部优化 */
+  .generator-header {
+    margin-bottom: 20px;
+  }
+
+  .generator-title {
+    font-size: 1.4rem;
+  }
+
+  /* 表单布局优化 - 单列垂直滚动 */
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+
+  .form-item-col {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  /* 输入框优化 - 全宽显示 */
+  .textarea-container {
+    max-width: 100%;
+  }
+
+  .fixed-height-textarea :deep(.el-textarea__inner) {
+    font-size: 16px; /* 防止iOS自动缩放 */
+    padding: 12px;
+    line-height: 1.5;
+  }
+
+  /* 按钮优化 - 触摸目标 >=44x44px */
+  .generate-btn {
+    width: 100%;
+    max-width: none;
+    min-height: 48px;
+    padding: 14px 20px;
+    font-size: 16px;
+    border-radius: var(--mobile-border-radius, 12px);
+  }
+
+  .random-prompt-btn {
+    min-height: var(--mobile-touch-target-size, 44px);
+    font-size: 14px;
+  }
+
+  .theme-btn {
+    min-width: var(--mobile-touch-target-size, 44px);
+    min-height: var(--mobile-touch-target-size, 44px);
+  }
+
+  /* 选择器优化 - 全宽且字体大小适配 */
+  :deep(.el-select) {
+    width: 100%;
+  }
+
+  :deep(.el-select .el-input__inner) {
+    font-size: 16px; /* 防止iOS自动缩放 */
+    min-height: var(--mobile-touch-target-size, 44px);
+    padding: 0 12px;
+  }
+
+  :deep(.el-input__inner) {
+    font-size: 16px;
+    min-height: var(--mobile-touch-target-size, 44px);
+  }
+
+  /* 数字输入框优化 */
+  .size-input :deep(.el-input__inner) {
+    font-size: 16px;
+    text-align: center;
+  }
+
+  .custom-size-inputs {
+    gap: 8px;
+    width: 100%;
+  }
+
+  .size-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* 滑块优化 */
+  .slider-container {
+    margin: 12px 0;
+    padding: 0 8px;
+  }
+
+  .guidance-scale-slider,
+  .steps-slider {
+    width: calc(100% - 50px);
+  }
+
+  .slider-value {
+    min-width: 40px;
+    font-size: 16px;
+  }
+
+  /* 高级选项优化 */
+  .additional-options {
+    margin-bottom: 16px;
+  }
+
+  .options-title {
+    font-size: 14px;
+    margin-bottom: 12px;
+  }
+
+  /* 表单操作按钮优化 */
+  .form-actions {
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .toggle-options-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: var(--mobile-touch-target-size, 44px);
+    font-size: 14px;
+  }
+
+  /* 字符计数器优化 */
+  .textarea-footer {
+    margin-top: 8px;
+  }
+
+  .character-count {
+    font-size: 14px;
+  }
+
+  /* 表单标签优化 */
+  :deep(.el-form-item__label) {
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  /* 帮助图标优化 */
+  .help-icon {
+    font-size: 16px;
+  }
+}
+
+/* 小屏幕手机优化 (320px - 480px) */
 @media (max-width: 480px) {
+  /* 进一步压缩间距 */
+  .image-generator-card {
+    padding: 12px;
+  }
+
   .generator-header {
     flex-direction: column;
     gap: 12px;
@@ -1044,6 +1197,8 @@ watch([width, height], () => {
 
   .header-actions {
     gap: 12px;
+    width: 100%;
+    justify-content: center;
   }
 
   .tech-icon-container {
@@ -1055,61 +1210,17 @@ watch([width, height], () => {
     font-size: 18px;
   }
 
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-    margin-bottom: 12px;
-  }
-
-  .form-item-col {
-    margin-bottom: 12px;
-  }
-
-  .custom-size-inputs {
-    gap: 6px;
-  }
-
-  .size-input {
-    width: 80px;
-  }
-
-  .generate-btn {
-    max-width: none;
-    width: 100%;
-    padding: 14px 20px;
-    font-size: 16px;
-    margin-top: 12px;
-    min-height: 50px;
-    border-radius: 12px;
-  }
-
-  .slider-container {
-    margin: 8px 0;
-  }
-
-  .options-title {
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
-
-  .additional-options {
-    margin-bottom: 16px;
-  }
-
-  /* 优化文本输入框在小屏幕上的显示 */
+  /* 文本输入框优化 */
   .fixed-height-textarea :deep(.el-textarea__inner) {
     height: 100px !important;
     min-height: 100px !important;
     max-height: 100px !important;
-    font-size: 16px; /* 防止iOS缩放 */
+    font-size: 16px;
     padding: 12px;
     line-height: 1.4;
   }
 
-  .textarea-container {
-    max-width: 100%;
-  }
-
+  /* 按钮布局优化 */
   .textarea-footer {
     flex-direction: column;
     align-items: stretch;
@@ -1126,29 +1237,35 @@ watch([width, height], () => {
 
   .character-count {
     text-align: center;
+    font-size: 13px;
   }
 
-  /* 优化选择器在小屏幕上的显示 */
-  :deep(.el-select) {
-    width: 100%;
+  /* 自定义尺寸输入优化 */
+  .custom-size-inputs {
+    gap: 6px;
   }
 
-  :deep(.el-select .el-input__inner) {
-    font-size: 16px; /* 防止iOS缩放 */
-    padding: 0 12px;
+  .size-input {
+    width: calc(50% - 15px);
   }
 
-  /* 优化数字输入框 */
-  .number-control {
-    padding: 6px;
+  .size-separator {
+    font-size: 14px;
   }
 
-  .number-display {
-    font-size: 18px;
-    min-width: 50px;
+  /* 生成按钮优化 */
+  .generate-btn {
+    margin-top: 12px;
+    min-height: 50px;
+    border-radius: 12px;
+    font-size: 16px;
   }
 
-  /* 优化滑块 */
+  /* 滑块优化 */
+  .slider-container {
+    margin: 8px 0;
+  }
+
   .guidance-scale-slider,
   .steps-slider {
     width: calc(100% - 50px);
@@ -1158,61 +1275,40 @@ watch([width, height], () => {
     min-width: 40px;
     font-size: 16px;
   }
-}
 
-/* 中等屏幕手机和小平板优化 */
-@media (max-width: 768px) {
-  .form-row {
-    flex-direction: column;
-    gap: 0;
-    margin-bottom: 14px;
+  /* 高级选项标题 */
+  .options-title {
+    font-size: 13px;
+    margin-bottom: 12px;
   }
 
-  .generator-title {
-    font-size: 1.5rem;
-  }
-
-  .generate-btn {
-    max-width: none;
-    padding: 14px 24px;
-    font-size: 16px;
-  }
-
+  /* 表单项间距 */
   .form-item-col {
-    margin-bottom: 14px;
+    margin-bottom: 12px;
   }
 
-  .custom-size-inputs {
-    gap: 8px;
-  }
-
-  .size-input {
-    width: 90px;
-  }
-
-  /* 优化触摸目标大小 */
-  :deep(.el-button) {
-    min-height: 44px;
-  }
-
-  :deep(.el-input__inner) {
-    min-height: 44px;
-    font-size: 16px;
-  }
-
-  :deep(.el-select .el-input__inner) {
-    min-height: 44px;
-  }
-
-  /* 优化间距 */
   .additional-options {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
 
-  .slider-container {
-    margin: 12px 0;
+  /* 数字控制器优化 */
+  .number-control {
+    padding: 6px;
+  }
+
+  .number-display {
+    font-size: 18px;
+    min-width: 50px;
+  }
+
+  /* 尺寸提示优化 */
+  .size-hint small {
+    font-size: 11px;
+    line-height: 1.3;
   }
 }
+
+
 
 @media (min-width: 1024px) {
   .generator-header {
